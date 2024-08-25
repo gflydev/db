@@ -6,8 +6,12 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gflydev/core v1.9.0 h1:k+9z4HKSmVDll/FkZPYyK0AYsRIzURZl3wcd9jxKhfs=
 github.com/gflydev/core v1.9.0/go.mod h1:/YjYOURtefBGNqkQWGtP51A6eWkTovh9di2N81RDWhs=
+github.com/gflydev/core v1.10.1 h1:v2Dz6vWnj1SX9ZHU2u/lFAELkR1CQLjnc8K7i7tJ3Q8=
+github.com/gflydev/core v1.10.1/go.mod h1:/YjYOURtefBGNqkQWGtP51A6eWkTovh9di2N81RDWhs=
 github.com/gflydev/db v1.0.0 h1:3DAExRtm7Uqu63sG5DrAflUtBP8X8sZjPdIX+C3l+GA=
 github.com/gflydev/db v1.0.0/go.mod h1:LynT2rQi4V4f+LKmI6g0jfzYTeqhMMG7kY85rWjf6e8=
+github.com/gflydev/db v1.1.0 h1:LtJSA+ufPYIjvauNF6sHQ2uyijmBxs4IbGNPH9Wnf5A=
+github.com/gflydev/db v1.1.0/go.mod h1:LynT2rQi4V4f+LKmI6g0jfzYTeqhMMG7kY85rWjf6e8=
 github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpvNJ1Y=
 github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
 github.com/jiveio/fluentsql v1.3.9 h1:1ogVfLDgMiB0Lho5t7q25kHe8kxH7YjQBu1to1Pm4p8=

@@ -5,7 +5,7 @@ go 1.22.6
 require github.com/jmoiron/sqlx v1.4.0
 
 require (
-	github.com/gflydev/db v1.0.0
+	github.com/gflydev/db v1.1.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/jiveio/fluentsql v1.3.9
 )
