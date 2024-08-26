@@ -3,6 +3,7 @@ package psql
 import (
 	"fmt"
 	"github.com/gflydev/db"
+	"github.com/jiveio/fluentsql"
 	"github.com/jmoiron/sqlx"
 	"os"
 )
@@ -11,11 +12,20 @@ import (
 //                                     PostgreSQL Driver
 // ========================================================================================
 
-// postgreSQL a implement of interface IDatabase for PostgreSQL
-type postgreSQL struct{}
+// New initial PostgreSQL driver and register to database manager
+func New() *PostgreSQL {
+	// Set DBType
+	fluentsql.SetDBType(fluentsql.PostgreSQL)
+
+	// Create driver
+	return &PostgreSQL{}
+}
+
+// PostgreSQL a implement of interface IDatabase for PostgreSQL
+type PostgreSQL struct{}
 
 // Load perform DB connection to PostgreSQL database.
-func (d *postgreSQL) Load() (*sqlx.DB, error) {
+func (d *PostgreSQL) Load() (*sqlx.DB, error) {
 	// Build PostgreSQL connection URL.
 	connURL := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=%s",

@@ -11,18 +11,19 @@ Fluent Model - flexible and powerful Data-Access Layer. Build on top of [Fluent 
 Install
 ```bash
 go get -u github.com/gflydev/db@v1.0.0
-go get -u github.com/gflydev/db/mysql@v1.0.0
+go get -u github.com/gflydev/db/mysql@v1.0.1
 ```
 
 Quick usage `main.go`
 ```go
 import (
     mb "github.com/gflydev/db"
-    _ "github.com/gflydev/db/mysql"
+    dbMySQL "github.com/gflydev/db/mysql"
 )
 
 func main() {
-    // Load Model builder
+    // Register DB driver & Load Model builder
+	mb.Register(dbMySQL.New())
     mb.Load()
 }
 ```

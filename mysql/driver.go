@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gflydev/core/utils"
 	"github.com/gflydev/db"
+	"github.com/jiveio/fluentsql"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -11,11 +12,20 @@ import (
 //                                     MySQL Driver
 // ========================================================================================
 
-// mySQL a implement of interface IDatabase for MySQL
-type mySQL struct{}
+// New initial MySQL driver and register to database manager
+func New() *MySQL {
+	// Set DBType
+	fluentsql.SetDBType(fluentsql.MySQL)
+
+	// Create driver
+	return &MySQL{}
+}
+
+// MySQL a implement of interface IDatabase for MySQL
+type MySQL struct{}
 
 // Load perform DB connection to Mysql database.
-func (d *mySQL) Load() (*sqlx.DB, error) {
+func (d *MySQL) Load() (*sqlx.DB, error) {
 	// Build Mysql connection URL.
 	connURL := fmt.Sprintf(
 		"%s:%s@tcp(%s:%v)/%s",
