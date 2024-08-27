@@ -6,6 +6,9 @@ import (
 	"github.com/gflydev/db"
 	"github.com/jiveio/fluentsql"
 	"github.com/jmoiron/sqlx"
+
+	// Autoload driver for PostgreSQL
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // ========================================================================================

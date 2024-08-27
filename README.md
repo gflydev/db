@@ -10,13 +10,13 @@ Fluent Model - flexible and powerful Data-Access Layer. Build on top of [Fluent 
 
 Install
 ```bash
-go get -u github.com/gflydev/db@v1.0.0
+go get -u github.com/gflydev/db@v1.1.0
 
 # PostgreSQL
-go get -u github.com/gflydev/db/psql@v1.0.0
+go get -u github.com/gflydev/db/psql@v1.1.0
 
 # MySQL
-go get -u github.com/gflydev/db/mysql@v1.0.0
+go get -u github.com/gflydev/db/mysql@v1.1.0
 ```
 
 Quick usage `main.go`

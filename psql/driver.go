@@ -6,6 +6,9 @@ import (
 	"github.com/jiveio/fluentsql"
 	"github.com/jmoiron/sqlx"
 	"os"
+
+	// Autoload driver for PostgreSQL
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // ========================================================================================
