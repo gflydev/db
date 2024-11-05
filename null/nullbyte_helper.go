@@ -20,3 +20,11 @@ func Byte(val byte) sql.NullByte {
 		Valid: true,
 	}
 }
+
+// ByteVal function will scan NullByte value.
+func ByteVal(nullByte sql.NullByte) *byte {
+	if !nullByte.Valid {
+		return nil
+	}
+	return &nullByte.Byte
+}

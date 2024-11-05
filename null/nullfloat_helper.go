@@ -20,3 +20,11 @@ func Float64(val float64) sql.NullFloat64 {
 		Valid:   true,
 	}
 }
+
+// FloatVal function will scan NullFloat64 value.
+func FloatVal(nullFloat sql.NullFloat64) *float64 {
+	if !nullFloat.Valid {
+		return nil
+	}
+	return &nullFloat.Float64
+}

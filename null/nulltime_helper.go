@@ -26,3 +26,11 @@ func Time(val time.Time) sql.NullTime {
 func NowTime() sql.NullTime {
 	return Time(time.Now())
 }
+
+// TimeVal function will scan NullTime value.
+func TimeVal(nullTime sql.NullTime) *time.Time {
+	if !nullTime.Valid {
+		return nil
+	}
+	return &nullTime.Time
+}

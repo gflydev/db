@@ -20,3 +20,11 @@ func Bool(val bool) sql.NullBool {
 		Valid: true,
 	}
 }
+
+// BoolVal function will scan NullBool value.
+func BoolVal(nullBool sql.NullBool) *bool {
+	if !nullBool.Valid {
+		return nil
+	}
+	return &nullBool.Bool
+}

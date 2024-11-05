@@ -20,3 +20,11 @@ func String(val string) sql.NullString {
 		Valid:  true,
 	}
 }
+
+// StringVal function will scan NullString value.
+func StringVal(nullString sql.NullString) *string {
+	if !nullString.Valid {
+		return nil
+	}
+	return &nullString.String
+}

@@ -52,3 +52,27 @@ func Int16(val int16) sql.NullInt16 {
 		Valid: true,
 	}
 }
+
+// Int64Val function will scan NullInt64 value.
+func Int64Val(nullInt sql.NullInt64) *int64 {
+	if !nullInt.Valid {
+		return nil
+	}
+	return &nullInt.Int64
+}
+
+// Int32Val function will scan NullInt32 value.
+func Int32Val(nullInt sql.NullInt32) *int32 {
+	if !nullInt.Valid {
+		return nil
+	}
+	return &nullInt.Int32
+}
+
+// Int16Val function will scan NullInt16 value.
+func Int16Val(nullInt sql.NullInt16) *int16 {
+	if !nullInt.Valid {
+		return nil
+	}
+	return &nullInt.Int16
+}
