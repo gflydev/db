@@ -5,8 +5,8 @@ Convert from model struct to table structure.
 package db
 
 import (
-	"errors"
 	"fmt"
+	"github.com/gflydev/core/errors"
 	"reflect"
 	"regexp"
 	"strings"

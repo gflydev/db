@@ -1,7 +1,8 @@
 package db
 
 import (
-	"errors"
+	"github.com/gflydev/core/errors"
+	"github.com/gflydev/core/log"
 	"github.com/jiveio/fluentsql"
 	"reflect"
 )
@@ -10,12 +11,13 @@ import (
 func (db *DBModel) Update(model any) (err error) {
 	typ := reflect.TypeOf(model)
 
-	if db.raw.sqlStr != "" {
+	switch {
+	case db.raw.sqlStr != "":
 		err = db.execRaw(db.raw.sqlStr, db.raw.args)
-	} else if typ.Kind() == reflect.Map {
+	case typ.Kind() == reflect.Map:
 		err = db.updateByMap(model)
-	} else if typ.Kind() == reflect.Struct ||
-		(typ.Kind() == reflect.Ptr && typ.Elem().Kind() == reflect.Struct) {
+	case typ.Kind() == reflect.Struct ||
+		(typ.Kind() == reflect.Ptr && typ.Elem().Kind() == reflect.Struct):
 		err = db.updateByStruct(model)
 	}
 
@@ -29,11 +31,11 @@ func (db *DBModel) Update(model any) (err error) {
 	return
 }
 
-func (db *DBModel) updateByMap(value any) (err error) {
-	if db.model == nil {
-		err = errors.New("missing model for map value")
+func (db *DBModel) updateByMap(value any) error {
+	var err error
 
-		return
+	if db.model == nil {
+		return errors.New("Missing model for map value")
 	}
 
 	// Reflect items from a map
@@ -51,12 +53,15 @@ func (db *DBModel) updateByMap(value any) (err error) {
 			val := itemVal.Interface()
 
 			err = setValue(db.model, key.String(), val)
+			if err != nil {
+				log.Error(err)
+			}
 		}
 	}
 
 	err = db.updateByStruct(db.model)
 
-	return
+	return err
 }
 
 // updateByStruct Update data by reflection Struct
@@ -66,6 +71,9 @@ func (db *DBModel) updateByStruct(model any) (err error) {
 
 	// Create a table object from a model
 	table, err = ModelData(model)
+	if err != nil {
+		panic(err)
+	}
 
 	// Create update instance
 	updateBuilder := fluentsql.UpdateInstance().
@@ -74,7 +82,8 @@ func (db *DBModel) updateByStruct(model any) (err error) {
 	// Build WHERE condition from a condition list
 	for _, condition := range db.whereStatement.Conditions {
 		// Sub-conditions
-		if len(condition.Group) > 0 {
+		switch {
+		case len(condition.Group) > 0:
 			// Append conditions from a group to query builder
 			updateBuilder.WhereGroup(func(whereBuilder fluentsql.WhereBuilder) *fluentsql.WhereBuilder {
 				whereBuilder.WhereCondition(condition.Group...)
@@ -82,11 +91,11 @@ func (db *DBModel) updateByStruct(model any) (err error) {
 				return &whereBuilder
 			})
 			hasCondition = true
-		} else if condition.AndOr == fluentsql.And {
+		case condition.AndOr == fluentsql.And:
 			// Add Where AND condition
 			updateBuilder.Where(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true
-		} else if condition.AndOr == fluentsql.Or {
+		case condition.AndOr == fluentsql.Or:
 			// Add Where OR condition
 			updateBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true

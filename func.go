@@ -2,7 +2,7 @@ package db
 
 import (
 	"encoding/json"
-	"errors"
+	"github.com/gflydev/core/errors"
 	"reflect"
 	"strconv"
 )
@@ -57,7 +57,7 @@ func setValue(model any, key string, data any) (err error) {
 		floatVar, _ := strconv.ParseFloat(dataStr, 64)
 		val = reflect.ValueOf(floatVar)
 	default:
-		err = errors.New("unknown type")
+		err = errors.New("Unknown type %s", key)
 	}
 
 	// IsZero panics if the value is invalid.

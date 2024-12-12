@@ -2,8 +2,8 @@ package db
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
+	"github.com/gflydev/core/errors"
 	"github.com/jiveio/fluentsql"
 	"math/big"
 	"reflect"
@@ -28,7 +28,7 @@ func (db *DBModel) First(model any) (err error) {
 	return
 }
 
-// Last last record, ordered by primary key desc
+// Last record, ordered by primary key desc
 func (db *DBModel) Last(model any) (err error) {
 	err = db.Get(model, GetLast)
 
@@ -76,7 +76,7 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 
 	if !(typ.Kind() == reflect.Struct ||
 		(typ.Kind() == reflect.Ptr && typ.Elem().Kind() == reflect.Struct)) {
-		err = errors.New("invalid data :: model not Struct type")
+		err = errors.New("Invalid data :: model not Struct type")
 
 		return
 	}
@@ -86,6 +86,9 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 
 	// Create a table object from a model
 	table, err = ModelData(model)
+	if err != nil {
+		panic(err)
+	}
 
 	// Get a primary key
 	if len(table.Primaries) > 0 {
@@ -117,17 +120,18 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 	// Build WHERE condition from a condition list
 	for _, condition := range db.whereStatement.Conditions {
 		// Sub-conditions
-		if len(condition.Group) > 0 {
+		switch {
+		case len(condition.Group) > 0:
 			// Append conditions from a group to query builder
 			queryBuilder.WhereGroup(func(whereBuilder fluentsql.WhereBuilder) *fluentsql.WhereBuilder {
 				whereBuilder.WhereCondition(condition.Group...)
 
 				return &whereBuilder
 			})
-		} else if condition.AndOr == fluentsql.And {
+		case condition.AndOr == fluentsql.And:
 			// Add Where AND condition
 			queryBuilder.Where(condition.Field, condition.Opt, condition.Value)
-		} else if condition.AndOr == fluentsql.Or {
+		case condition.AndOr == fluentsql.Or:
 			// Add Where OR condition
 			queryBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 		}
@@ -169,11 +173,13 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 		orderByField = table.Columns[0].Name
 	}
 	var orderByDir fluentsql.OrderByDir
-	if getType == GetLast && orderByField != "" {
+
+	switch {
+	case getType == GetLast && orderByField != "":
 		orderByDir = fluentsql.Desc
-	} else if getType == GetFirst && orderByField != "" {
+	case getType == GetFirst && orderByField != "":
 		orderByDir = fluentsql.Asc
-	} else if getType == TakeOne { // Random order field and order dir
+	case getType == TakeOne: // Random order field and order dir
 		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(table.Columns)-1)))
 		orderByField = table.Columns[n.Int64()].Name
 
@@ -233,7 +239,7 @@ func (db *DBModel) Find(model any, params ...any) (total int, err error) {
 	typ := reflect.TypeOf(model)
 
 	if !(typ.Kind() == reflect.Ptr && typ.Elem().Kind() == reflect.Slice) {
-		panic(errors.New("invalid data :: model not *Slice type"))
+		panic(errors.New("Invalid data :: model not *Slice type"))
 	}
 
 	var table *Table
@@ -256,7 +262,7 @@ func (db *DBModel) Find(model any, params ...any) (total int, err error) {
 
 		typ := reflect.TypeOf(sliceIds)
 		if !(typ.Kind() == reflect.Slice) {
-			panic(errors.New("invalid data :: params not *Slice type"))
+			panic(errors.New("Invalid data :: params not *Slice type"))
 		}
 
 		db.wherePrimaryCondition = fluentsql.Condition{
@@ -291,17 +297,18 @@ func (db *DBModel) Find(model any, params ...any) (total int, err error) {
 	// Build WHERE condition from a condition list
 	for _, condition := range db.whereStatement.Conditions {
 		// Sub-conditions
-		if len(condition.Group) > 0 {
+		switch {
+		case len(condition.Group) > 0:
 			// Append conditions from a group to query builder
 			queryBuilder.WhereGroup(func(whereBuilder fluentsql.WhereBuilder) *fluentsql.WhereBuilder {
 				whereBuilder.WhereCondition(condition.Group...)
 
 				return &whereBuilder
 			})
-		} else if condition.AndOr == fluentsql.And {
+		case condition.AndOr == fluentsql.And:
 			// Add Where AND condition
 			queryBuilder.Where(condition.Field, condition.Opt, condition.Value)
-		} else if condition.AndOr == fluentsql.Or {
+		case condition.AndOr == fluentsql.Or:
 			// Add Where OR condition
 			queryBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 		}

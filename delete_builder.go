@@ -1,13 +1,15 @@
 package db
 
 import (
-	"errors"
+	"github.com/gflydev/core/errors"
 	"github.com/jiveio/fluentsql"
 	"reflect"
 )
 
 // Delete perform delete data for table via model type Struct, *Struct
-func (db *DBModel) Delete(model any, args ...any) (err error) {
+func (db *DBModel) Delete(model any, args ...any) error {
+	var err error
+
 	// Delete by raw sql
 	if db.raw.sqlStr != "" {
 		err = db.execRaw(db.raw.sqlStr, db.raw.args)
@@ -18,8 +20,6 @@ func (db *DBModel) Delete(model any, args ...any) (err error) {
 
 		// Reset fluent model builder
 		db.reset()
-
-		return
 	}
 
 	if len(args) > 0 {
@@ -47,6 +47,9 @@ func (db *DBModel) Delete(model any, args ...any) (err error) {
 
 	// Create a table object from a model
 	table, err = ModelData(model)
+	if err != nil {
+		panic(err)
+	}
 
 	// Get a primary key
 	if len(table.Primaries) > 0 {
@@ -74,8 +77,8 @@ func (db *DBModel) Delete(model any, args ...any) (err error) {
 
 	// Build WHERE condition from a condition list
 	for _, condition := range db.whereStatement.Conditions {
-		// Sub-conditions
-		if len(condition.Group) > 0 {
+		switch {
+		case len(condition.Group) > 0:
 			// Append conditions from a group to query builder
 			deleteBuilder.WhereGroup(func(whereBuilder fluentsql.WhereBuilder) *fluentsql.WhereBuilder {
 				whereBuilder.WhereCondition(condition.Group...)
@@ -83,11 +86,11 @@ func (db *DBModel) Delete(model any, args ...any) (err error) {
 				return &whereBuilder
 			})
 			hasCondition = true
-		} else if condition.AndOr == fluentsql.And {
+		case condition.AndOr == fluentsql.And:
 			// Add Where AND condition
 			deleteBuilder.Where(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true
-		} else if condition.AndOr == fluentsql.Or {
+		case condition.AndOr == fluentsql.Or:
 			// Add Where OR condition
 			deleteBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true
@@ -95,7 +98,7 @@ func (db *DBModel) Delete(model any, args ...any) (err error) {
 	}
 
 	if !hasCondition {
-		panic(errors.New("missing WHERE condition for deleting operator"))
+		panic(errors.New("Missing WHERE condition for deleting operator"))
 	}
 
 	err = db.delete(deleteBuilder)
@@ -103,5 +106,5 @@ func (db *DBModel) Delete(model any, args ...any) (err error) {
 	// Reset fluent model builder
 	db.reset()
 
-	return
+	return err
 }

@@ -149,9 +149,9 @@ func (db *DBModel) addRaw(sqlStr string, args []any, primaryColumn string) (id a
 	} else if fluentsql.DBType() == fluentsql.MySQL {
 		var result sql.Result
 		if db.tx != nil {
-			result, err = db.tx.Exec(sqlStr, args...)
+			result, _ = db.tx.Exec(sqlStr, args...)
 		} else {
-			result, err = dbInstance.Exec(sqlStr, args...)
+			result, _ = dbInstance.Exec(sqlStr, args...)
 		}
 
 		id, err = result.LastInsertId()
@@ -196,19 +196,6 @@ func (db *DBModel) execRaw(sqlStr string, args []any) (err error) {
 	return
 }
 
-// Paging query data and pagination
-func (db *DBModel) paging(q *fluentsql.QueryBuilder, model any, total *int) error {
-	if err := db.query(q, model); err != nil {
-		return err
-	}
-
-	if err := db.count(q, total); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Count get total rows
 func (db *DBModel) count(q *fluentsql.QueryBuilder, total *int) error {
 	var fetch fluentsql.Fetch
@@ -246,8 +233,6 @@ func (db *DBModel) Raw(sqlStr string, args ...any) *DBModel {
 
 	return db
 }
-
-//db.Raw("SELECT name, age FROM users WHERE name = ?", "Antonio").Find(&result)
 
 // Select List of columns
 func (db *DBModel) Select(columns ...any) *DBModel {

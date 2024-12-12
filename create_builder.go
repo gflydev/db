@@ -1,9 +1,9 @@
 package db
 
 import (
-	"errors"
+	"github.com/gflydev/core/errors"
+	"github.com/gflydev/core/log"
 	"github.com/jiveio/fluentsql"
-	"log"
 	"reflect"
 	"slices"
 )
@@ -12,14 +12,15 @@ import (
 func (db *DBModel) Create(model any) (err error) {
 	typ := reflect.TypeOf(model)
 
-	if db.raw.sqlStr != "" {
+	switch {
+	case db.raw.sqlStr != "":
 		err = db.createByRaw(model)
-	} else if typ.Kind() == reflect.Map {
+	case typ.Kind() == reflect.Map:
 		err = db.createByMap(model)
-	} else if typ.Kind() == reflect.Slice {
+	case typ.Kind() == reflect.Slice:
 		err = db.createBySlice(model)
-	} else if typ.Kind() == reflect.Struct ||
-		(typ.Kind() == reflect.Ptr && typ.Elem().Kind() == reflect.Struct) {
+	case
+		typ.Kind() == reflect.Struct || (typ.Kind() == reflect.Ptr && typ.Elem().Kind() == reflect.Struct):
 		err = db.createByStruct(model)
 	}
 
@@ -33,11 +34,14 @@ func (db *DBModel) Create(model any) (err error) {
 	return
 }
 
-func (db *DBModel) createByRaw(model any) (err error) {
+func (db *DBModel) createByRaw(model any) error {
 	var table *Table
 
 	// Create a table object from a model
-	table, err = ModelData(model)
+	table, err := ModelData(model)
+	if err != nil {
+		panic(err)
+	}
 
 	var id any
 	var primaryColumn Column
@@ -52,16 +56,19 @@ func (db *DBModel) createByRaw(model any) (err error) {
 	// Set ID back model
 	if primaryColumn.Key != "" {
 		err = setValue(model, primaryColumn.Key, id)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return err
 }
 
-func (db *DBModel) createByMap(value any) (err error) {
-	if db.model == nil {
-		err = errors.New("missing model for map value")
+func (db *DBModel) createByMap(value any) error {
+	var err error
 
-		return
+	if db.model == nil {
+		return errors.New("Missing model for map value")
 	}
 
 	// Reflect items from a map
@@ -79,12 +86,19 @@ func (db *DBModel) createByMap(value any) (err error) {
 			val := itemVal.Interface()
 
 			err = setValue(db.model, key.String(), val)
+			if err != nil {
+				log.Error(err)
+			}
 		}
+	}
+
+	if err != nil {
+		return err
 	}
 
 	err = db.createByStruct(db.model)
 
-	return
+	return err
 }
 
 // createBySlice Insert data by reflection Slice
