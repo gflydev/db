@@ -35,22 +35,6 @@ func (db *DBModel) Last(model any) (err error) {
 	return
 }
 
-// Take get one record, no specified order
-func (db *DBModel) Take(model any, args ...any) (err error) {
-	if len(args) > 0 {
-		db.wherePrimaryCondition = fluentsql.Condition{
-			Field: nil,
-			Opt:   fluentsql.Eq,
-			Value: args[0],
-			AndOr: fluentsql.And,
-		}
-	}
-
-	err = db.Get(model, TakeOne)
-
-	return
-}
-
 // Get with specific strategy GetLast | GetFirst | TakeOne
 func (db *DBModel) Get(model any, getType GetOne) (err error) {
 	// Query raw SQL
@@ -82,17 +66,11 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 	}
 
 	var table *Table
-	var primaryKey any
 
 	// Create a table object from a model
 	table, err = ModelData(model)
 	if err != nil {
 		panic(err)
-	}
-
-	// Get a primary key
-	if len(table.Primaries) > 0 {
-		primaryKey = table.Primaries[0].Name
 	}
 
 	// Columns which will be queried
@@ -111,10 +89,22 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 		From(table.Name).
 		Limit(1, 0)
 
-	// Build WHERE condition with specific primary value
-	if db.wherePrimaryCondition.Value != nil && primaryKey != nil {
-		db.wherePrimaryCondition.Field = primaryKey
-		queryBuilder.WhereCondition(db.wherePrimaryCondition)
+	// Build WHERE condition with primary columns
+	for _, primaryColumn := range table.Primaries {
+		primaryKey := primaryColumn.Name
+		primaryVal := table.Values[primaryKey]
+
+		if primaryVal != nil {
+			// Build WHERE condition with specific primary value
+			wherePrimaryCondition := fluentsql.Condition{
+				Field: primaryKey,
+				Opt:   fluentsql.Eq,
+				Value: primaryVal,
+				AndOr: fluentsql.And,
+			}
+
+			queryBuilder.WhereCondition(wherePrimaryCondition)
+		}
 	}
 
 	// Build WHERE condition from a condition list
@@ -167,11 +157,12 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 
 	// Build ORDER BY clause
 	orderByField := ""
-	if primaryKey != nil {
-		orderByField = primaryKey.(string)
+	if len(table.Primaries) > 0 {
+		orderByField = table.Primaries[0].Name
 	} else {
 		orderByField = table.Columns[0].Name
 	}
+
 	var orderByDir fluentsql.OrderByDir
 
 	switch {
@@ -208,7 +199,7 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 // ========================================================================================
 
 // Find search rows
-func (db *DBModel) Find(model any, params ...any) (total int, err error) {
+func (db *DBModel) Find(model any) (total int, err error) {
 	// Query raw SQL
 	if db.raw.sqlStr != "" {
 		// Data persistence
@@ -243,35 +234,12 @@ func (db *DBModel) Find(model any, params ...any) (total int, err error) {
 	}
 
 	var table *Table
-	var primaryKey any
 
 	// Get a type of model and get an element
 	typeElement := reflect.TypeOf(model).Elem().Elem()  // First Elem() for pointer. Second Elem() for item
 	valueElement := reflect.ValueOf(typeElement).Elem() // Create empty value
 
 	table = processModel(typeElement, valueElement, NewTable())
-
-	// Get a primary key
-	if len(table.Primaries) > 0 {
-		primaryKey = table.Primaries[0].Name
-	}
-
-	// Try to build WHERE for primary column
-	if len(params) > 0 && primaryKey != nil {
-		sliceIds := params[0]
-
-		typ := reflect.TypeOf(sliceIds)
-		if !(typ.Kind() == reflect.Slice) {
-			panic(errors.New("Invalid data :: params not *Slice type"))
-		}
-
-		db.wherePrimaryCondition = fluentsql.Condition{
-			Field: primaryKey,
-			Opt:   fluentsql.In,
-			Value: sliceIds,
-			AndOr: fluentsql.And,
-		}
-	}
 
 	// Columns which will be queried
 	var selectColumns []any
@@ -287,12 +255,6 @@ func (db *DBModel) Find(model any, params ...any) (total int, err error) {
 	queryBuilder := fluentsql.QueryInstance().
 		Select(selectColumns...).
 		From(table.Name)
-
-	// Build WHERE condition with specific primary value
-	if db.wherePrimaryCondition.Value != nil && primaryKey != nil {
-		db.wherePrimaryCondition.Field = primaryKey
-		queryBuilder.WhereCondition(db.wherePrimaryCondition)
-	}
 
 	// Build WHERE condition from a condition list
 	for _, condition := range db.whereStatement.Conditions {

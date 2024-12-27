@@ -32,6 +32,7 @@ github.com/jackc/puddle/v2 v2.2.2 h1:PR8nw+E/1w0GLuRFSmiioY6UooMp6KJv0/61nB7icHo
 github.com/jackc/puddle/v2 v2.2.2/go.mod h1:vriiEXHvEE654aYKXXjOvZM39qJ0q+azkZFrfEOc3H4=
 github.com/jiveio/fluentsql v1.3.9 h1:1ogVfLDgMiB0Lho5t7q25kHe8kxH7YjQBu1to1Pm4p8=
 github.com/jiveio/fluentsql v1.3.9/go.mod h1:SXSRbuBAqsOIJYSRj78nE2y1/ri27h4LzmoClHAeSjg=
+github.com/jiveio/fluentsql v1.4.0/go.mod h1:SXSRbuBAqsOIJYSRj78nE2y1/ri27h4LzmoClHAeSjg=
 github.com/jmoiron/sqlx v1.4.0 h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o=
 github.com/jmoiron/sqlx v1.4.0/go.mod h1:ZrZ7UsYB/weZdl2Bxg6jCRO9c3YHl8r3ahlKmRT4JLY=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=

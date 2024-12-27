@@ -4,7 +4,7 @@ go 1.22.6
 
 require (
 	github.com/gflydev/core v1.10.6
-	github.com/jiveio/fluentsql v1.3.9
+	github.com/jiveio/fluentsql v1.4.0
 	github.com/jmoiron/sqlx v1.4.0
 )
 

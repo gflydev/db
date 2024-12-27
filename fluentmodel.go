@@ -24,16 +24,15 @@ type DBModel struct {
 	model any // Model struct
 	raw   Raw // Raw struct
 
-	selectStatement       fluentsql.Select    // Select columns
-	omitsSelectStatement  fluentsql.Select    // Omit columns
-	whereStatement        fluentsql.Where     // Where conditions
-	wherePrimaryCondition fluentsql.Condition // Where primary key condition
-	joinStatement         fluentsql.Join
-	groupByStatement      fluentsql.GroupBy
-	havingStatement       fluentsql.Having // A version of Where
-	orderByStatement      fluentsql.OrderBy
-	limitStatement        fluentsql.Limit
-	fetchStatement        fluentsql.Fetch // A version of Limit
+	selectStatement      fluentsql.Select // Select columns
+	omitsSelectStatement fluentsql.Select // Omit columns
+	whereStatement       fluentsql.Where  // Where conditions
+	joinStatement        fluentsql.Join
+	groupByStatement     fluentsql.GroupBy
+	havingStatement      fluentsql.Having // A version of Where
+	orderByStatement     fluentsql.OrderBy
+	limitStatement       fluentsql.Limit
+	fetchStatement       fluentsql.Fetch // A version of Limit
 }
 
 func Instance() *DBModel {
@@ -50,7 +49,6 @@ func (db *DBModel) reset() *DBModel {
 	db.selectStatement.Columns = []any{}
 	db.omitsSelectStatement.Columns = []any{}
 	db.whereStatement.Conditions = []fluentsql.Condition{}
-	db.wherePrimaryCondition.Value = nil
 	db.joinStatement.Items = []fluentsql.JoinItem{}
 	db.groupByStatement.Items = []string{}
 	db.havingStatement.Conditions = []fluentsql.Condition{}

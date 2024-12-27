@@ -3,11 +3,10 @@ package db
 import (
 	"github.com/gflydev/core/errors"
 	"github.com/jiveio/fluentsql"
-	"reflect"
 )
 
 // Delete perform delete data for table via model type Struct, *Struct
-func (db *DBModel) Delete(model any, args ...any) error {
+func (db *DBModel) Delete(model any) error {
 	var err error
 
 	// Delete by raw sql
@@ -22,27 +21,7 @@ func (db *DBModel) Delete(model any, args ...any) error {
 		db.reset()
 	}
 
-	if len(args) > 0 {
-		var opt fluentsql.WhereOpt
-		var argument = args[0]
-		argumentType := reflect.TypeOf(argument)
-
-		if argumentType.Kind() == reflect.Slice {
-			opt = fluentsql.In
-		} else {
-			opt = fluentsql.Eq
-		}
-
-		db.wherePrimaryCondition = fluentsql.Condition{
-			Field: nil,
-			Opt:   opt,
-			Value: argument,
-			AndOr: fluentsql.And,
-		}
-	}
-
 	var table *Table
-	var primaryKey any
 	var hasCondition = false
 
 	// Create a table object from a model
@@ -51,28 +30,25 @@ func (db *DBModel) Delete(model any, args ...any) error {
 		panic(err)
 	}
 
-	// Get a primary key
-	if len(table.Primaries) > 0 {
-		primaryKey = table.Primaries[0].Name
-
-		if table.Values[primaryKey.(string)] != nil {
-			db.wherePrimaryCondition = fluentsql.Condition{
-				Field: nil,
-				Opt:   fluentsql.Eq,
-				Value: table.Values[primaryKey.(string)],
-				AndOr: fluentsql.And,
-			}
-		}
-	}
-
 	// Create delete instance
 	deleteBuilder := fluentsql.DeleteInstance().
 		Delete(table.Name)
 
-	// Build WHERE condition with specific primary value
-	if db.wherePrimaryCondition.Value != nil && primaryKey != nil {
-		deleteBuilder.Where(primaryKey, db.wherePrimaryCondition.Opt, db.wherePrimaryCondition.Value)
-		hasCondition = true
+	// Build WHERE condition with primary columns
+	for _, primaryColumn := range table.Primaries {
+		primaryKey := primaryColumn.Name
+		primaryVal := table.Values[primaryKey]
+
+		if primaryVal != nil {
+			wherePrimaryCondition := fluentsql.Condition{
+				Field: primaryKey,
+				Opt:   fluentsql.Eq,
+				Value: primaryVal,
+				AndOr: fluentsql.And,
+			}
+
+			deleteBuilder.WhereCondition(wherePrimaryCondition)
+		}
 	}
 
 	// Build WHERE condition from a condition list

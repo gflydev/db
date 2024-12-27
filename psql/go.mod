@@ -9,7 +9,7 @@ replace github.com/gflydev/db => ../
 require (
 	github.com/gflydev/db v1.2.0
 	github.com/jackc/pgx/v5 v5.7.1
-	github.com/jiveio/fluentsql v1.3.9
+	github.com/jiveio/fluentsql v1.4.0
 )
 
 require (
