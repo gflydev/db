@@ -48,6 +48,7 @@ func (db *DBModel) Delete(model any) error {
 			}
 
 			deleteBuilder.WhereCondition(wherePrimaryCondition)
+			hasCondition = true
 		}
 	}
 
