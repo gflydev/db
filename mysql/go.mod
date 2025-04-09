@@ -6,7 +6,7 @@ require github.com/jmoiron/sqlx v1.4.0
 
 require (
 	github.com/gflydev/core v1.11.3
-	github.com/gflydev/db v1.4.1
+	github.com/gflydev/db v1.5.0
 	github.com/go-sql-driver/mysql v1.9.2
 	github.com/jiveio/fluentsql v1.4.0
 )

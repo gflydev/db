@@ -4,10 +4,8 @@ go 1.24.0
 
 require github.com/jmoiron/sqlx v1.4.0
 
-replace github.com/gflydev/db => ../
-
 require (
-	github.com/gflydev/db v1.4.1
+	github.com/gflydev/db v1.5.0
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/jiveio/fluentsql v1.4.0
 )
