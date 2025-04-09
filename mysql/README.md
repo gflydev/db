@@ -23,7 +23,7 @@ import (
 
 func main() {
     // Register DB driver & Load Model builder
-	mb.Register(dbMySQL.New())
+    mb.Register(dbMySQL.New())
     mb.Load()
 }
 ```

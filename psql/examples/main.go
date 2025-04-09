@@ -1,8 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"examples/models"
 	"fmt"
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/gflydev/core"
 	"github.com/gflydev/core/log"
 	"github.com/gflydev/core/try"
@@ -12,6 +14,8 @@ import (
 	"github.com/gflydev/session"
 	sessionMemory "github.com/gflydev/session/memory"
 	"github.com/gflydev/view/pongo"
+	qb "github.com/jiveio/fluentsql"
+	"time"
 
 	// Autoload .env file
 	_ "github.com/joho/godotenv/autoload"
@@ -56,6 +60,9 @@ func (m *HomePage) Handle(c *core.Ctx) error {
 
 	// Database
 	queryUser()
+
+	// Generic DAO
+	genericDao()
 
 	return c.View("home", core.Data{
 		"title": "gFly | Laravel inspired web framework written in Go",
@@ -127,6 +134,60 @@ func queryUser() {
 			log.Fatal(err)
 		}
 		log.Info("User\n", user)
+	}).Catch(func(e try.E) {
+		log.Error("Error\n", e)
+	})
+}
+
+func genericDao() {
+	try.Perform(func() {
+		// ----- GetModelByID -----
+		user1, err := mb.GetModelByID[models.User](1)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Info("Get \n", user1.Email)
+
+		// ----- CreateModel
+		err = mb.CreateModel(&models.User{
+			Email:        gofakeit.Email(),
+			Password:     gofakeit.Password(true, true, true, true, true, 6),
+			Fullname:     gofakeit.Name(),
+			Phone:        gofakeit.Phone(),
+			Token:        sql.NullString{},
+			Status:       "active",
+			CreatedAt:    time.Time{},
+			Avatar:       sql.NullString{},
+			UpdatedAt:    time.Time{},
+			VerifiedAt:   sql.NullTime{},
+			BlockedAt:    sql.NullTime{},
+			DeletedAt:    sql.NullTime{},
+			LastAccessAt: sql.NullTime{},
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// ----- FindModels -----
+		users, total, err := mb.FindModels[models.User](1, 100, "id", qb.Desc, qb.Condition{
+			Field: "id",
+			Opt:   qb.NotEq,
+			Value: 0,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Info("Find \n", total)
+		for _, user := range users {
+			log.Info("User\n", user.Email)
+		}
+
+		// ----- UpdateModel -----
+		user1.Fullname = "Admin"
+		if err := mb.UpdateModel(user1); err != nil {
+			log.Fatal(err)
+		}
+		log.Info("Update \n", user1.Fullname)
 	}).Catch(func(e try.E) {
 		log.Error("Error\n", e)
 	})

@@ -10,13 +10,13 @@ Fluent Model - flexible and powerful Data-Access Layer. Build on top of [Fluent 
 
 Install
 ```bash
-go get -u github.com/gflydev/db@v1.1.0
+go get -u github.com/gflydev/db@latest
 
 # PostgreSQL
-go get -u github.com/gflydev/db/psql@v1.1.0
+go get -u github.com/gflydev/db/psql@latest
 
 # MySQL
-go get -u github.com/gflydev/db/mysql@v1.1.0
+go get -u github.com/gflydev/db/mysql@latest
 ```
 
 Quick usage `main.go`
@@ -56,6 +56,65 @@ func queryUser() {
         log.Printf("Error %v\n", e)
     })
 }
+```
+
+### Generic DAO
+
+Basic methods to create CRUD actions 
+
+```go
+import (
+    mb "github.com/gflydev/db" // Model builder
+    qb "github.com/jiveio/fluentsql" // Query builder
+)
+...
+// ----- GetModelByID -----
+user, err := mb.GetModelByID[models.User](1)
+if err != nil {
+    log.Fatal(err)
+}
+log.Info("Get \n", user1.Email)
+
+// ----- CreateModel -----
+err = mb.CreateModel(&models.User{
+    Email:        "john@gmail.com",
+    Password:     "02j33ih32i3",
+    Fullname:     "John Man",
+    Phone:        "0989712353",
+    Token:        sql.NullString{},
+    Status:       "active",
+    CreatedAt:    time.Time{},
+    Avatar:       sql.NullString{},
+    UpdatedAt:    time.Time{},
+    VerifiedAt:   sql.NullTime{},
+    BlockedAt:    sql.NullTime{},
+    DeletedAt:    sql.NullTime{},
+    LastAccessAt: sql.NullTime{},
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+// ----- FindModels -----
+users, total, err := mb.FindModels[models.User](1, 100, "id", qb.Desc, qb.Condition{
+        Field: "id",
+        Opt:   qb.NotEq,
+        Value: 0,
+    })
+if err != nil {
+    log.Fatal(err)
+}
+log.Info("Find \n", total)
+for _, user := range users {
+    log.Info("User\n", user.Email)
+}
+
+// ----- UpdateModel -----
+user1.Fullname = "Admin"
+if err := mb.UpdateModel(user1); err != nil {
+    log.Fatal(err)
+}
+log.Info("Update \n", user1.Fullname)
 ```
 
 ### More using `FluentSQL` and `FluentModel`
