@@ -8,33 +8,39 @@ import (
 	"log"
 )
 
-// ========================================================================================
-//                                         DB Model
-// ========================================================================================
+// ====================================================================
+//                              DB Model
+// ====================================================================
 
-// Raw struct
+// Raw struct represents a raw SQL query with its arguments.
 type Raw struct {
-	sqlStr string
-	args   []any
+	sqlStr string // The SQL query string.
+	args   []any  // The arguments for the SQL query.
 }
 
+// DBModel struct represents a database model with SQL builders and transaction handling.
 type DBModel struct {
-	tx *sqlx.Tx
+	tx *sqlx.Tx // Database transaction.
 
-	model any // Model struct
-	raw   Raw // Raw struct
+	model any // Model struct for queries.
+	raw   Raw // Raw SQL query and arguments.
 
-	selectStatement      fluentsql.Select // Select columns
-	omitsSelectStatement fluentsql.Select // Omit columns
-	whereStatement       fluentsql.Where  // Where conditions
-	joinStatement        fluentsql.Join
-	groupByStatement     fluentsql.GroupBy
-	havingStatement      fluentsql.Having // A version of Where
-	orderByStatement     fluentsql.OrderBy
-	limitStatement       fluentsql.Limit
-	fetchStatement       fluentsql.Fetch // A version of Limit
+	selectStatement      fluentsql.Select  // SQL SELECT statement builder.
+	omitsSelectStatement fluentsql.Select  // SQL SELECT statement builder for omitting columns.
+	whereStatement       fluentsql.Where   // WHERE clause builder.
+	joinStatement        fluentsql.Join    // JOIN clause builder.
+	groupByStatement     fluentsql.GroupBy // GROUP BY clause builder.
+	havingStatement      fluentsql.Having  // HAVING clause builder.
+	orderByStatement     fluentsql.OrderBy // ORDER BY clause builder.
+	limitStatement       fluentsql.Limit   // LIMIT clause builder.
+	fetchStatement       fluentsql.Fetch   // FETCH clause builder, a version of LIMIT.
 }
 
+// Instance creates and returns a new DBModel instance.
+//
+// Returns:
+//
+//	*DBModel - A pointer to a new database model instance.
 func Instance() *DBModel {
 	return &DBModel{
 		tx:    nil,
@@ -42,28 +48,39 @@ func Instance() *DBModel {
 	}
 }
 
-// Reset DB model's builders after everytime perform the DB query
+// reset clears the state of the DBModel and resets builders.
+//
+// Returns:
+//
+//	*DBModel - The reset DBModel instance.
 func (db *DBModel) reset() *DBModel {
-	db.model = nil
-	db.raw.sqlStr = ""
-	db.selectStatement.Columns = []any{}
-	db.omitsSelectStatement.Columns = []any{}
-	db.whereStatement.Conditions = []fluentsql.Condition{}
-	db.joinStatement.Items = []fluentsql.JoinItem{}
-	db.groupByStatement.Items = []string{}
-	db.havingStatement.Conditions = []fluentsql.Condition{}
-	db.orderByStatement.Items = []fluentsql.SortItem{}
-	db.limitStatement.Limit = 0
-	db.fetchStatement.Fetch = 0
+	db.model = nil                                          // Clear the model.
+	db.raw.sqlStr = ""                                      // Reset raw SQL string.
+	db.selectStatement.Columns = []any{}                    // Clear SELECT columns.
+	db.omitsSelectStatement.Columns = []any{}               // Clear omitted SELECT columns.
+	db.whereStatement.Conditions = []fluentsql.Condition{}  // Clear WHERE conditions.
+	db.joinStatement.Items = []fluentsql.JoinItem{}         // Clear JOIN items.
+	db.groupByStatement.Items = []string{}                  // Clear GROUP BY items.
+	db.havingStatement.Conditions = []fluentsql.Condition{} // Clear HAVING conditions.
+	db.orderByStatement.Items = []fluentsql.SortItem{}      // Clear ORDER BY items.
+	db.limitStatement.Limit = 0                             // Reset limit.
+	db.fetchStatement.Fetch = 0                             // Reset fetch.
 
 	return db
 }
 
-// ========================================================================================
-//                                 FluentSQL + SQLX integration
-// ========================================================================================
+// ====================================================================
+//                      FluentSQL + SQLX integration
+// ====================================================================
 
-// get perform getting single data row by QueryBuilder
+// get performs fetching a single data row using QueryBuilder.
+//
+// Parameters:
+//   - q (*fluentsql.QueryBuilder): The query builder comprising the SQL query and arguments.
+//   - model (any): The model to map the resulting row.
+//
+// Returns:
+//   - err (error): Error encountered during execution, if any.
 func (db *DBModel) get(q *fluentsql.QueryBuilder, model any) (err error) {
 	var sqlStr string
 	var args []any
@@ -73,7 +90,15 @@ func (db *DBModel) get(q *fluentsql.QueryBuilder, model any) (err error) {
 	return db.getRaw(sqlStr, args, model)
 }
 
-// get perform getting single data row by QueryBuilder
+// getRaw executes a raw SQL query to fetch a single data row.
+//
+// Parameters:
+//   - sqlStr (string): The raw SQL query string.
+//   - args ([]any): Arguments for the query placeholders.
+//   - model (any): The model to map the resulting row.
+//
+// Returns:
+//   - err (error): Error encountered during execution, if any.
 func (db *DBModel) getRaw(sqlStr string, args []any, model any) (err error) {
 	if utils.Getenv("DB_DEBUG", false) {
 		log.Printf("SQL> %s - args %v", sqlStr, args)
@@ -88,7 +113,14 @@ func (db *DBModel) getRaw(sqlStr string, args []any, model any) (err error) {
 	return
 }
 
-// query performs query list data row by QueryBuilder
+// query performs querying a list of data rows using QueryBuilder.
+//
+// Parameters:
+//   - q (*fluentsql.QueryBuilder): The query builder with the SQL and arguments.
+//   - model (any): The model to map the resulting rows.
+//
+// Returns:
+//   - err (error): Error encountered during execution, if any.
 func (db *DBModel) query(q *fluentsql.QueryBuilder, model any) (err error) {
 	var sqlStr string
 	var args []any
@@ -98,7 +130,15 @@ func (db *DBModel) query(q *fluentsql.QueryBuilder, model any) (err error) {
 	return db.queryRaw(sqlStr, args, model)
 }
 
-// queryRaw performs query list data row by sqlStr and arguments
+// queryRaw executes a raw SQL query to fetch a list of data rows.
+//
+// Parameters:
+//   - sqlStr (string): The raw SQL query string.
+//   - args ([]any): Arguments for the query placeholders.
+//   - model (any): The model to map the resulting rows.
+//
+// Returns:
+//   - err (error): Error encountered during execution, if any.
 func (db *DBModel) queryRaw(sqlStr string, args []any, model any) (err error) {
 	if utils.Getenv("DB_DEBUG", false) {
 		log.Printf("SQL> %s - args %v", sqlStr, args)
@@ -113,7 +153,15 @@ func (db *DBModel) queryRaw(sqlStr string, args []any, model any) (err error) {
 	return
 }
 
-// add performs adding new data by InsertBuilder
+// add performs inserting new data using InsertBuilder and returns the inserted ID.
+//
+// Parameters:
+//   - q (*fluentsql.InsertBuilder): The insert query builder with the SQL and arguments.
+//   - primaryColumn (string): The primary column to return, used for PostgreSQL.
+//
+// Returns:
+//   - id (any): The ID of the newly inserted row.
+//   - err (error): Error encountered during execution, if any.
 func (db *DBModel) add(q *fluentsql.InsertBuilder, primaryColumn string) (id any, err error) {
 	var sqlStr string
 	var args []any
@@ -123,7 +171,16 @@ func (db *DBModel) add(q *fluentsql.InsertBuilder, primaryColumn string) (id any
 	return db.addRaw(sqlStr, args, primaryColumn)
 }
 
-// addRaw performs adding new data by sqlStr and arguments
+// addRaw executes a raw SQL query to insert new data and returns the inserted ID.
+//
+// Parameters:
+//   - sqlStr (string): The raw SQL insert query string.
+//   - args ([]any): Arguments for the query placeholders.
+//   - primaryColumn (string): The primary column to return, used for PostgreSQL.
+//
+// Returns:
+//   - id (any): The ID of the newly inserted row.
+//   - err (error): Error encountered during execution, if any.
 func (db *DBModel) addRaw(sqlStr string, args []any, primaryColumn string) (id any, err error) {
 	if utils.Getenv("DB_DEBUG", false) {
 		log.Printf("SQL> %s - args %v", sqlStr, args)
@@ -135,7 +192,7 @@ func (db *DBModel) addRaw(sqlStr string, args []any, primaryColumn string) (id a
 			sqlStr += " RETURNING " + primaryColumn
 
 			if utils.Getenv("DB_DEBUG", false) {
-				log.Printf("Chagned SQL> %s", sqlStr)
+				log.Printf("Changed SQL> %s", sqlStr)
 			}
 		}
 
@@ -158,7 +215,13 @@ func (db *DBModel) addRaw(sqlStr string, args []any, primaryColumn string) (id a
 	return
 }
 
-// update performs updating data by UpdateBuilder
+// update performs updating data using UpdateBuilder.
+//
+// Parameters:
+//   - q (*fluentsql.UpdateBuilder): The update query builder with the SQL and arguments.
+//
+// Returns:
+//   - err (error): Error encountered during execution, if any.
 func (db *DBModel) update(q *fluentsql.UpdateBuilder) (err error) {
 	var sqlStr string
 	var args []any
@@ -168,7 +231,13 @@ func (db *DBModel) update(q *fluentsql.UpdateBuilder) (err error) {
 	return db.execRaw(sqlStr, args)
 }
 
-// delete performs deleting data by DeleteBuilder
+// delete performs deleting data using DeleteBuilder.
+//
+// Parameters:
+//   - q (*fluentsql.DeleteBuilder): The delete query builder with the SQL and arguments.
+//
+// Returns:
+//   - err (error): Error encountered during execution, if any.
 func (db *DBModel) delete(q *fluentsql.DeleteBuilder) (err error) {
 	var sqlStr string
 	var args []any
@@ -178,7 +247,14 @@ func (db *DBModel) delete(q *fluentsql.DeleteBuilder) (err error) {
 	return db.execRaw(sqlStr, args)
 }
 
-// execRaw performs updating and deleting data by DeleteBuilder
+// execRaw performs executing a raw SQL query for update or delete operations.
+//
+// Parameters:
+//   - sqlStr (string): The raw SQL query string.
+//   - args ([]any): Arguments for the query placeholders.
+//
+// Returns:
+//   - err (error): Error encountered during execution, if any.
 func (db *DBModel) execRaw(sqlStr string, args []any) (err error) {
 	if utils.Getenv("DB_DEBUG", false) {
 		log.Printf("SQL> %s - args %v", sqlStr, args)
@@ -194,7 +270,14 @@ func (db *DBModel) execRaw(sqlStr string, args []any) (err error) {
 	return
 }
 
-// Count get total rows
+// count retrieves the total number of rows based on the QueryBuilder.
+//
+// Parameters:
+//   - q (*fluentsql.QueryBuilder): The query builder with the SQL and arguments.
+//   - total (*int): Pointer to an integer to store the total count.
+//
+// Returns:
+//   - err (error): Error encountered during execution, if any.
 func (db *DBModel) count(q *fluentsql.QueryBuilder, total *int) error {
 	var fetch fluentsql.Fetch
 	var limit fluentsql.Limit
@@ -220,11 +303,18 @@ func (db *DBModel) count(q *fluentsql.QueryBuilder, total *int) error {
 	return nil
 }
 
-// ========================================================================================
-//                                 DB Model operators
-// ========================================================================================
+// ====================================================================
+//                           DB Model operators
+// ====================================================================
 
-// Raw build query from raw SQL
+// Raw builds a query from raw SQL.
+//
+// Parameters:
+//   - sqlStr (string): The raw SQL query string.
+//   - args (...any): Variadic arguments for the query placeholders.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) Raw(sqlStr string, args ...any) *DBModel {
 	db.raw.sqlStr = sqlStr
 	db.raw.args = args
@@ -232,28 +322,54 @@ func (db *DBModel) Raw(sqlStr string, args ...any) *DBModel {
 	return db
 }
 
-// Select List of columns
+// Select specifies the list of columns to retrieve.
+//
+// Parameters:
+//   - columns (...any): Variadic list of columns to include in the SELECT clause.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) Select(columns ...any) *DBModel {
 	db.selectStatement.Columns = columns
 
 	return db
 }
 
-// Omit exclude some columns
+// Omit excludes specific columns from retrieval.
+//
+// Parameters:
+//   - columns (...any): Variadic list of columns to omit.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) Omit(columns ...any) *DBModel {
 	db.omitsSelectStatement.Columns = columns
 
 	return db
 }
 
-// Model set specific model for builder
+// Model sets a specific model for the builder.
+//
+// Parameters:
+//   - model (any): The model instance to operate on.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) Model(model any) *DBModel {
 	db.model = model
 
 	return db
 }
 
-// Where add where condition
+// Where adds a WHERE condition to the query.
+//
+// Parameters:
+//   - field (any): The field or column to filter.
+//   - opt (fluentsql.WhereOpt): The operator to use (e.g., equals, greater than).
+//   - value (any): The value to compare against.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) Where(field any, opt fluentsql.WhereOpt, value any) *DBModel {
 	db.whereStatement.Append(fluentsql.Condition{
 		Field: field,
@@ -265,7 +381,15 @@ func (db *DBModel) Where(field any, opt fluentsql.WhereOpt, value any) *DBModel 
 	return db
 }
 
-// WhereOr add where condition
+// WhereOr adds an OR condition to the WHERE clause.
+//
+// Parameters:
+//   - field (any): The field or column to filter.
+//   - opt (fluentsql.WhereOpt): The operator to use.
+//   - value (any): The value to compare against.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) WhereOr(field any, opt fluentsql.WhereOpt, value any) *DBModel {
 	db.whereStatement.Append(fluentsql.Condition{
 		Field: field,
@@ -277,7 +401,13 @@ func (db *DBModel) WhereOr(field any, opt fluentsql.WhereOpt, value any) *DBMode
 	return db
 }
 
-// WhereGroup combine multi where conditions into a group.
+// WhereGroup combines multiple WHERE conditions into a group.
+//
+// Parameters:
+//   - groupCondition (fluentsql.FnWhereBuilder): The function to build grouped conditions.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) WhereGroup(groupCondition fluentsql.FnWhereBuilder) *DBModel {
 	// Create new WhereBuilder
 	whereBuilder := groupCondition(*fluentsql.WhereInstance())
@@ -291,7 +421,14 @@ func (db *DBModel) WhereGroup(groupCondition fluentsql.FnWhereBuilder) *DBModel 
 	return db
 }
 
-// When checking TRUE to build Where condition.
+// When conditionally applies a WHERE condition if the provided condition is TRUE.
+//
+// Parameters:
+//   - condition (bool): Determines whether the condition should be applied.
+//   - groupCondition (fluentsql.FnWhereBuilder): The function to build the condition.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) When(condition bool, groupCondition fluentsql.FnWhereBuilder) *DBModel {
 	if !condition {
 		return db
@@ -305,7 +442,15 @@ func (db *DBModel) When(condition bool, groupCondition fluentsql.FnWhereBuilder)
 	return db
 }
 
-// Join builder
+// Join adds a JOIN clause to the query.
+//
+// Parameters:
+//   - join (fluentsql.JoinType): The type of join (e.g., INNER, LEFT).
+//   - table (string): The name of the table to join.
+//   - condition (fluentsql.Condition): The condition for the join.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) Join(join fluentsql.JoinType, table string, condition fluentsql.Condition) *DBModel {
 	db.joinStatement.Append(fluentsql.JoinItem{
 		Join:      join,
@@ -316,7 +461,15 @@ func (db *DBModel) Join(join fluentsql.JoinType, table string, condition fluents
 	return db
 }
 
-// Having builder
+// Having adds a HAVING condition to the query.
+//
+// Parameters:
+//   - field (any): The field or column to filter.
+//   - opt (fluentsql.WhereOpt): The operator to use.
+//   - value (any): The value to compare against.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) Having(field any, opt fluentsql.WhereOpt, value any) *DBModel {
 	db.havingStatement.Append(fluentsql.Condition{
 		Field: field,
@@ -328,21 +481,41 @@ func (db *DBModel) Having(field any, opt fluentsql.WhereOpt, value any) *DBModel
 	return db
 }
 
-// GroupBy fields in a query
+// GroupBy adds GROUP BY fields to the query.
+//
+// Parameters:
+//   - fields (...string): The fields to group by.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) GroupBy(fields ...string) *DBModel {
 	db.groupByStatement.Append(fields...)
 
 	return db
 }
 
-// OrderBy builder
+// OrderBy adds an ORDER BY clause to the query.
+//
+// Parameters:
+//   - field (string): The field to sort by.
+//   - dir (fluentsql.OrderByDir): The sorting direction (e.g., ASC or DESC).
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) OrderBy(field string, dir fluentsql.OrderByDir) *DBModel {
 	db.orderByStatement.Append(field, dir)
 
 	return db
 }
 
-// Limit builder
+// Limit adds a LIMIT clause to the query.
+//
+// Parameters:
+//   - limit (int): The maximum number of rows to return.
+//   - offset (int): The number of rows to skip.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) Limit(limit, offset int) *DBModel {
 	db.limitStatement.Limit = limit
 	db.limitStatement.Offset = offset
@@ -350,7 +523,10 @@ func (db *DBModel) Limit(limit, offset int) *DBModel {
 	return db
 }
 
-// RemoveLimit builder
+// RemoveLimit removes the LIMIT clause from the query.
+//
+// Returns:
+//   - fluentsql.Limit: The removed limit settings.
 func (db *DBModel) RemoveLimit() fluentsql.Limit {
 	var _limitStatement fluentsql.Limit
 
@@ -363,7 +539,14 @@ func (db *DBModel) RemoveLimit() fluentsql.Limit {
 	return _limitStatement
 }
 
-// Fetch builder
+// Fetch adds a FETCH clause to the query.
+//
+// Parameters:
+//   - offset (int): The offset for fetching rows.
+//   - fetch (int): The number of rows to fetch.
+//
+// Returns:
+//   - *DBModel: A reference to the DBModel instance for chaining.
 func (db *DBModel) Fetch(offset, fetch int) *DBModel {
 	db.fetchStatement.Offset = offset
 	db.fetchStatement.Fetch = fetch
@@ -371,7 +554,10 @@ func (db *DBModel) Fetch(offset, fetch int) *DBModel {
 	return db
 }
 
-// RemoveFetch builder
+// RemoveFetch removes the FETCH clause from the query.
+//
+// Returns:
+//   - fluentsql.Fetch: The removed fetch settings.
 func (db *DBModel) RemoveFetch() fluentsql.Fetch {
 	var _fetchStatement fluentsql.Fetch
 
@@ -384,11 +570,14 @@ func (db *DBModel) RemoveFetch() fluentsql.Fetch {
 	return _fetchStatement
 }
 
-// whereFromModel Build and append WHERE clause from specific model's data off table.
+// whereFromModel builds and appends a WHERE clause from the specific model's data.
+//
+// Parameters:
+//   - queryBuilder (*fluentsql.QueryBuilder): The query builder to modify.
 func (tbl *Table) whereFromModel(queryBuilder *fluentsql.QueryBuilder) {
 	if tbl.HasData {
 		for _, column := range tbl.Columns {
-			// Prevent some meta, relational, and default (Zero) value of column
+			// Prevent processing meta, relational, and default (zero) column values
 			if column.isNotData() || column.IsZero {
 				continue
 			}
@@ -399,31 +588,47 @@ func (tbl *Table) whereFromModel(queryBuilder *fluentsql.QueryBuilder) {
 	}
 }
 
-// ========================================================================================
-//                                     DB Transaction
-// ========================================================================================
+// ====================================================================
+//                            DB Transaction
+// ====================================================================
 
-// Begin new transaction
+// Begin starts a new database transaction.
+//
+// Returns:
+//   - *DBModel: The DBModel instance with an active transaction.
 func (db *DBModel) Begin() *DBModel {
+	// Initialize a new transaction for the database.
 	db.tx = dbInstanceTx()
 
 	return db
 }
 
-// Rollback transaction
+// Rollback rolls back the current database transaction.
+//
+// Returns:
+//   - error: An error, if any, that occurred during the rollback process.
 func (db *DBModel) Rollback() error {
+	// Check if there’s an active transaction.
 	if db.tx != nil {
+		// Attempt to roll back the transaction and return the result.
 		return db.tx.Rollback()
 	}
 
+	// Return nil if there’s no active transaction.
 	return nil
 }
 
-// Commit transaction
+// Commit commits the current database transaction.
+//
+// Returns:
+//   - error: An error, if any, that occurred during the commit process.
 func (db *DBModel) Commit() error {
+	// Check if there’s an active transaction.
 	if db.tx != nil {
+		// Attempt to commit the transaction and return the result.
 		return db.tx.Commit()
 	}
 
+	// Return nil if there’s no active transaction.
 	return nil
 }

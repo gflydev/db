@@ -7,13 +7,27 @@ import (
 	"strconv"
 )
 
-// setValue reflection set value for a key in struct.
-// Support types bool, string, int (Int, Int8, Int16, Int32, Int64),
+// setValue uses reflection to set a value for a key in a struct.
+// Supported types: bool, string, int (Int, Int8, Int16, Int32, Int64),
 // uint (UInt, UInt8, UInt16, UInt32, UInt64), float (float32, float64)
+//
+// Parameters:
+//   - model (any): The struct or pointer to a struct on which the value will be set.
+//   - key (string): The field name in the struct to set the value for.
+//   - data (any): The value to set in the specified field.
+//
+// Returns:
+//   - error: Returns an error if the operation fails.
 func setValue(model any, key string, data any) (err error) {
+	// Get the reflect.Value of the model
 	value := reflect.ValueOf(model)
+
+	// Retrieve the field by name
 	field := reflect.Indirect(value).FieldByName(key)
+
 	var val reflect.Value
+
+	// Convert the data to a string representation
 	dataStr := toStr(data)
 
 	switch field.Kind() {
@@ -60,21 +74,29 @@ func setValue(model any, key string, data any) (err error) {
 		err = errors.New("Unknown type %s", key)
 	}
 
-	// IsZero panics if the value is invalid.
-	// Most functions and methods never return an invalid Value.
+	// Check if the value is valid and not zero
+	// IsZero panics if the value is invalid. Most functions and methods never return an invalid Value.
 	isSet := val.IsValid() && !val.IsZero()
 
 	if isSet {
+		// Set the value for the field
 		field.Set(val)
 	}
 
 	return
 }
 
-// toStr convert interface{} type to string.
-// Support types bool, string, int (Int, Int8, Int16, Int32, Int64),
+// toStr converts an interface{} type to a string representation.
+// Supported types: bool, string, int (Int, Int8, Int16, Int32, Int64),
 // uint (UInt, UInt8, UInt16, UInt32, UInt64), float (float32, float64)
+//
+// Parameters:
+//   - data (interface{}): The value to be converted to a string.
+//
+// Returns:
+//   - string: The string representation of the input value.
 func toStr(data interface{}) (res string) {
+	// Convert the input value to a string based on its type
 	switch v := data.(type) {
 	case float64:
 		res = strconv.FormatFloat(data.(float64), 'f', 6, 64)

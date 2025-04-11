@@ -11,33 +11,44 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// ========================================================================================
-//                                     MySQL Driver
-// ========================================================================================
+// ====================================================================
+//                           MySQL Driver
+// ====================================================================
 
-// New initial MySQL driver and register to database manager
+// New initializes a new MySQL driver instance and registers it to the database manager.
+//
+// Returns:
+//
+//	*MySQL: A new instance of the MySQL driver.
 func New() *MySQL {
-	// Set DBType
+	// Set the database type to MySQL for fluentsql
 	fluentsql.SetDBType(fluentsql.MySQL)
 
-	// Create driver
+	// Create and return a new MySQL driver instance
 	return &MySQL{}
 }
 
-// MySQL a implement of interface IDatabase for MySQL
+// MySQL is an implementation of the IDatabase interface for MySQL.
 type MySQL struct{}
 
-// Load perform DB connection to Mysql database.
+// Load establishes a connection to the MySQL database.
+//
+// Returns:
+//
+//	*sqlx.DB: A pointer to the connected database instance.
+//	error: An error instance if the connection fails; otherwise, nil.
 func (d *MySQL) Load() (*sqlx.DB, error) {
-	// Build Mysql connection URL.
+	// Build MySQL connection URL using environment variables or defaults.
+	// connURL is a formatted string containing the database connection information.
 	connURL := fmt.Sprintf(
 		"%s:%s@tcp(%s:%v)/%s",
-		utils.Getenv("DB_USERNAME", "root"),
-		utils.Getenv("DB_PASSWORD", "secret"),
-		utils.Getenv("DB_HOST", "localhost"),
-		utils.Getenv("DB_PORT", 3306),
-		utils.Getenv("DB_NAME", "gfly"),
+		utils.Getenv("DB_USERNAME", "root"),   // Database username
+		utils.Getenv("DB_PASSWORD", "secret"), // Database password
+		utils.Getenv("DB_HOST", "localhost"),  // Host address
+		utils.Getenv("DB_PORT", 3306),         // Port number
+		utils.Getenv("DB_NAME", "gfly"),       // Database name
 	)
 
+	// Attempt to connect to the database using the constructed connection URL.
 	return db.Connect(connURL, "mysql")
 }

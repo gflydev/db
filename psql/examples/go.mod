@@ -6,29 +6,29 @@ replace github.com/gflydev/db => ../../
 
 replace github.com/gflydev/db/psql => ../
 
-require github.com/gflydev/core v1.11.3
+require github.com/gflydev/core v1.12.2
 
 require github.com/gflydev/view/pongo v1.0.2
 
 require github.com/gflydev/db/psql v1.1.0
 
-require github.com/gflydev/db v1.4.1
+require github.com/gflydev/db v1.5.0
 
 require (
+	github.com/brianvoe/gofakeit/v7 v7.2.1
 	github.com/gflydev/session v1.0.1
 	github.com/gflydev/session/memory v1.0.1
+	github.com/jiveio/fluentsql v1.4.1
 	github.com/joho/godotenv v1.5.1
 )
 
 require (
 	github.com/andybalholm/brotli v1.1.1 // indirect
-	github.com/brianvoe/gofakeit/v7 v7.2.1 // indirect
 	github.com/flosch/pongo2/v6 v6.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.7.4 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
-	github.com/jiveio/fluentsql v1.4.0 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/kr/text v0.2.0 // indirect

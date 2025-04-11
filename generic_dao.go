@@ -9,7 +9,7 @@ import (
 )
 
 // ====================================================================
-// ========================= Specific methods =========================
+//                           Specific methods
 // ====================================================================
 
 // GetModelByID retrieves the first record of type T from the database
@@ -50,7 +50,7 @@ func GetModelBy[T any](field string, value any) (*T, error) {
 }
 
 // ====================================================================
-// ========================== Generic methods =========================
+//                           Generic methods
 // ====================================================================
 
 // GetModelWhereEq retrieves the first record of type T from the database

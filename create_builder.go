@@ -8,10 +8,18 @@ import (
 	"slices"
 )
 
-// Create add new data for table via model type Slice, Struct, *Struct
+// Create adds new data for a table via model type Slice, Struct, or *Struct.
+//
+// Parameters:
+//   - model: The data to be inserted. Accepts Slice, Map, Struct, or *Struct types.
+//
+// Returns:
+//   - error: Returns an error if the operation fails.
 func (db *DBModel) Create(model any) (err error) {
+	// Get the type of the model
 	typ := reflect.TypeOf(model)
 
+	// Perform creation based on model type
 	switch {
 	case db.raw.sqlStr != "":
 		err = db.createByRaw(model)
@@ -34,11 +42,19 @@ func (db *DBModel) Create(model any) (err error) {
 	return
 }
 
+// createByRaw inserts data using a raw SQL query string.
+//
+// Parameters:
+//   - model: The data model to insert.
+//
+// Returns:
+//   - error: Returns an error if the operation fails.
 func (db *DBModel) createByRaw(model any) error {
 	var table *Table
+	var err error
 
 	// Create a table object from a model
-	table, err := ModelData(model)
+	table, err = ModelData(model)
 	if err != nil {
 		panic(err)
 	}
@@ -46,14 +62,15 @@ func (db *DBModel) createByRaw(model any) error {
 	var id any
 	var primaryColumn Column
 
-	// Get primary column name (in case only one primary in table)
+	// Get primary column name (if only one primary in table exists)
 	if len(table.Primaries) == 1 {
 		primaryColumn = table.Primaries[0]
 	}
 
+	// Perform raw insertion and retrieve the ID
 	id, err = db.addRaw(db.raw.sqlStr, db.raw.args, primaryColumn.Name)
 
-	// Set ID back model
+	// Set ID back to the model
 	if primaryColumn.Key != "" {
 		err = setValue(model, primaryColumn.Key, id)
 		if err != nil {
@@ -64,27 +81,35 @@ func (db *DBModel) createByRaw(model any) error {
 	return err
 }
 
+// createByMap inserts data by reflecting keys and values from a Map.
+//
+// Parameters:
+//   - value: The Map containing the keys and values to insert.
+//
+// Returns:
+//   - error: Returns an error if the operation fails.
 func (db *DBModel) createByMap(value any) error {
 	var err error
 
+	// Check if a model exists
 	if db.model == nil {
 		return errors.New("Missing model for map value")
 	}
 
-	// Reflect items from a map
+	// Reflect items from the Map
 	mapValue := reflect.ValueOf(value)
 
-	// Process for each map key
+	// Process each key-value pair in the Map
 	for _, key := range mapValue.MapKeys() {
 		itemVal := mapValue.MapIndex(key)
 
-		// IsZero panics if the value is invalid.
-		// Most functions and methods never return an invalid Value.
+		// Check if the value is valid and not zero
 		isSet := itemVal.IsValid() && !itemVal.IsZero()
 
 		if isSet {
 			val := itemVal.Interface()
 
+			// Set the value on the model
 			err = setValue(db.model, key.String(), val)
 			if err != nil {
 				log.Error(err)
@@ -92,36 +117,46 @@ func (db *DBModel) createByMap(value any) error {
 		}
 	}
 
+	// If an error occurred, return it
 	if err != nil {
 		return err
 	}
 
+	// Use the model to perform a structured insert
 	err = db.createByStruct(db.model)
 
 	return err
 }
 
-// createBySlice Insert data by reflection Slice
+// createBySlice inserts multiple records by reflecting over a Slice of models.
+//
+// Parameters:
+//   - model: The Slice containing the models to insert.
+//
+// Returns:
+//   - error: Returns an error if the operation fails.
 func (db *DBModel) createBySlice(model any) (err error) {
+	// Reflect the Slice
 	items := reflect.ValueOf(model)
 
+	// Iterate through each element in the Slice
 	for i := 0; i < items.Len(); i++ {
 		itemVal := items.Index(i)
 		var indirectVal reflect.Value
 
-		// Only process 2 types: *Struct or Struct
+		// Handle *Struct or Struct types
 		if itemVal.Kind() == reflect.Pointer {
 			indirectVal = reflect.Indirect(itemVal.Elem())
 		} else if itemVal.Kind() == reflect.Struct {
 			indirectVal = reflect.Indirect(itemVal)
 		}
 
-		// Skip all unknown types (Not *Struct or Struct)
+		// Skip invalid types
 		if !indirectVal.IsValid() {
 			continue
 		}
 
-		// Convert reflection item value to an Interface type
+		// Perform insertion for each item in the Slice
 		item := itemVal.Interface()
 		err = db.createByStruct(item)
 	}
@@ -129,7 +164,13 @@ func (db *DBModel) createBySlice(model any) (err error) {
 	return
 }
 
-// createByStruct Insert data by reflection Struct
+// createByStruct inserts a single record using reflection on a Struct.
+//
+// Parameters:
+//   - model: The Struct model to insert.
+//
+// Returns:
+//   - error: Returns an error if the operation fails.
 func (db *DBModel) createByStruct(model any) (err error) {
 	var table *Table
 	var columns []string
@@ -141,31 +182,30 @@ func (db *DBModel) createByStruct(model any) (err error) {
 		panic(err)
 	}
 
-	// Get columns and values accordingly
+	// Generate insert columns and values by iterating over table columns
 	for _, column := range table.Columns {
-		// Restriction from model declaration
+		// Skip columns that are not data or are primary keys
 		if column.isNotData() || column.Primary {
 			continue
 		}
 
-		// Restriction from selected columns
+		// Skip columns not included in the select statement
 		if len(db.selectStatement.Columns) > 0 && !slices.Contains(db.selectStatement.Columns, any(column.Name)) {
 			continue
 		}
 
-		// Restriction from omitted columns
+		// Skip columns specified in the omits select statement
 		if len(db.omitsSelectStatement.Columns) > 0 && slices.Contains(db.omitsSelectStatement.Columns, any(column.Name)) {
 			continue
 		}
 
+		// Add column names and values to their respective slices
 		value := table.Values[column.Name]
-
-		// Pair columns and values to insert
 		columns = append(columns, column.Name)
 		values = append(values, value)
 	}
 
-	// Create insert instance
+	// Build an INSERT SQL statement with the columns and values
 	insertBuilder := fluentsql.InsertInstance().
 		Insert(table.Name, columns...).
 		Row(values...)
@@ -173,17 +213,18 @@ func (db *DBModel) createByStruct(model any) (err error) {
 	var id any
 	var primaryColumn Column
 
-	// Get primary column name (in case only one primary in table)
+	// Check if there is exactly one primary column
 	if len(table.Primaries) == 1 {
 		primaryColumn = table.Primaries[0]
 	}
 
+	// Perform the insert and retrieve the ID
 	id, err = db.add(insertBuilder, primaryColumn.Name)
 	if err != nil {
 		panic(err)
 	}
 
-	// Set ID back model
+	// Set the ID back to the model
 	if primaryColumn.Key != "" {
 		err = setValue(model, primaryColumn.Key, id)
 	}
