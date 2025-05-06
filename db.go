@@ -36,14 +36,16 @@ func Connect(connURL, driver string) (*sqlx.DB, error) {
 	}
 
 	// Load configuration settings for database connections from environment variables.
-	maxConn := utils.Getenv("DB_MAX_CONNECTION", 0)                  // Maximum open connections (default: 0, unlimited).
-	maxIdleConn := utils.Getenv("DB_MAX_IDLE_CONNECTION", 2)         // Maximum idle connections (default: 2).
-	maxLifetimeConn := utils.Getenv("DB_MAX_LIFETIME_CONNECTION", 0) // Maximum lifetime of connections in nanoseconds (default: 0, infinite).
+	maxConn := utils.Getenv("DB_MAX_CONNECTION", 0)                   // Maximum open connections (default: 0, unlimited).
+	maxIdleConn := utils.Getenv("DB_MAX_IDLE_CONNECTION", 10)         // Maximum idle connections (default: 10).
+	maxLifetimeConn := utils.Getenv("DB_MAX_LIFETIME_CONNECTION", 30) // Maximum lifetime of connections in minutes (default: 30).
+	maxIdleTimeConn := utils.Getenv("DB_MAX_IDLE_TIME_CONNECTION", 3) // Maximum idle time of connections in minutes (default: 3).
 
 	// Set database connection settings.
 	dbConnection.SetMaxOpenConns(maxConn)
 	dbConnection.SetMaxIdleConns(maxIdleConn)
-	dbConnection.SetConnMaxLifetime(time.Duration(maxLifetimeConn))
+	dbConnection.SetConnMaxLifetime(time.Duration(maxLifetimeConn) * time.Minute)
+	dbConnection.SetConnMaxIdleTime(time.Duration(maxIdleTimeConn) * time.Minute)
 
 	// Try to ping database to verify the connection.
 	if err := dbConnection.Ping(); err != nil {
