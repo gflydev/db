@@ -2,7 +2,7 @@ package db
 
 import (
 	"github.com/gflydev/core/errors"
-	"github.com/jiveio/fluentsql"
+	qb "github.com/jiveio/fluentsql"
 )
 
 // Delete performs the deletion of data for a given table using a model of type Struct or *Struct.
@@ -37,7 +37,7 @@ func (db *DBModel) Delete(model any) error {
 	}
 
 	// Create an instance of a delete query builder.
-	deleteBuilder := fluentsql.DeleteInstance().
+	deleteBuilder := qb.DeleteInstance().
 		Delete(table.Name)
 
 	// Build WHERE clause using primary columns of the table.
@@ -46,11 +46,11 @@ func (db *DBModel) Delete(model any) error {
 		primaryVal := table.Values[primaryKey] // The value of the primary column.
 
 		if primaryVal != nil {
-			wherePrimaryCondition := fluentsql.Condition{
-				Field: primaryKey,    // Field name for the condition.
-				Opt:   fluentsql.Eq,  // Equality operator for the condition.
-				Value: primaryVal,    // Value to match against.
-				AndOr: fluentsql.And, // Logical operator for chaining conditions.
+			wherePrimaryCondition := qb.Condition{
+				Field: primaryKey, // Field name for the condition.
+				Opt:   qb.Eq,      // Equality operator for the condition.
+				Value: primaryVal, // Value to match against.
+				AndOr: qb.And,     // Logical operator for chaining conditions.
 			}
 
 			// Add the primary key condition to the query builder.
@@ -64,16 +64,16 @@ func (db *DBModel) Delete(model any) error {
 		switch {
 		case len(condition.Group) > 0:
 			// Append grouped conditions to the query builder.
-			deleteBuilder.WhereGroup(func(whereBuilder fluentsql.WhereBuilder) *fluentsql.WhereBuilder {
+			deleteBuilder.WhereGroup(func(whereBuilder qb.WhereBuilder) *qb.WhereBuilder {
 				whereBuilder.WhereCondition(condition.Group...)
 				return &whereBuilder
 			})
 			hasCondition = true
-		case condition.AndOr == fluentsql.And:
+		case condition.AndOr == qb.And:
 			// Add the AND condition to the query builder.
 			deleteBuilder.Where(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true
-		case condition.AndOr == fluentsql.Or:
+		case condition.AndOr == qb.Or:
 			// Add the OR condition to the query builder.
 			deleteBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true

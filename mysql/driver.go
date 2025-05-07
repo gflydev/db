@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/gflydev/core/utils"
 	"github.com/gflydev/db"
-	"github.com/jiveio/fluentsql"
+	qb "github.com/jiveio/fluentsql"
 	"github.com/jmoiron/sqlx"
 
 	// Autoload driver for PostgreSQL
@@ -22,7 +22,7 @@ import (
 //	*MySQL: A new instance of the MySQL driver.
 func New() *MySQL {
 	// Set the database type to MySQL for fluentsql
-	fluentsql.SetDBType(fluentsql.MySQL)
+	qb.SetDialect(new(qb.MySQLDialect))
 
 	// Create and return a new MySQL driver instance
 	return &MySQL{}
@@ -42,7 +42,7 @@ func (d *MySQL) Load() (*sqlx.DB, error) {
 	// connURL is a formatted string containing the database connection information.
 	connURL := fmt.Sprintf(
 		"%s:%s@tcp(%s:%v)/%s",
-		utils.Getenv("DB_USERNAME", "root"),   // Database username
+		utils.Getenv("DB_USERNAME", "user"),   // Database username
 		utils.Getenv("DB_PASSWORD", "secret"), // Database password
 		utils.Getenv("DB_HOST", "localhost"),  // Host address
 		utils.Getenv("DB_PORT", 3306),         // Port number

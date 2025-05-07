@@ -3,7 +3,7 @@ package db
 import (
 	"github.com/gflydev/core/errors"
 	"github.com/gflydev/core/log"
-	"github.com/jiveio/fluentsql"
+	qb "github.com/jiveio/fluentsql"
 	"reflect"
 )
 
@@ -104,7 +104,7 @@ func (db *DBModel) updateByStruct(model any) (err error) {
 	}
 
 	// Initialize the Update query builder for the target database table.
-	updateBuilder := fluentsql.UpdateInstance().
+	updateBuilder := qb.UpdateInstance().
 		Update(table.Name)
 
 	// Build WHERE conditions from pre-defined conditions in 'whereStatement'.
@@ -112,16 +112,16 @@ func (db *DBModel) updateByStruct(model any) (err error) {
 		switch {
 		case len(condition.Group) > 0:
 			// Append grouped conditions using a builder function.
-			updateBuilder.WhereGroup(func(whereBuilder fluentsql.WhereBuilder) *fluentsql.WhereBuilder {
+			updateBuilder.WhereGroup(func(whereBuilder qb.WhereBuilder) *qb.WhereBuilder {
 				whereBuilder.WhereCondition(condition.Group...)
 				return &whereBuilder
 			})
 			hasCondition = true
-		case condition.AndOr == fluentsql.And:
+		case condition.AndOr == qb.And:
 			// Add an AND clause to the WHERE condition.
 			updateBuilder.Where(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true
-		case condition.AndOr == fluentsql.Or:
+		case condition.AndOr == qb.Or:
 			// Add an OR clause to the WHERE condition.
 			updateBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true
@@ -135,7 +135,7 @@ func (db *DBModel) updateByStruct(model any) (err error) {
 				// Use primary key column value for the WHERE condition.
 				value := table.Values[column.Name]
 
-				updateBuilder.Where(column.Name, fluentsql.Eq, value)
+				updateBuilder.Where(column.Name, qb.Eq, value)
 				hasCondition = true
 			}
 		}

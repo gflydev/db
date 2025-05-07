@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/gflydev/core/errors"
-	"github.com/jiveio/fluentsql"
+	qb "github.com/jiveio/fluentsql"
 	"math/big"
 	"reflect"
 )
@@ -108,7 +108,7 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 	}
 
 	// Create a query builder with initial SELECT, FROM, and LIMIT clauses
-	queryBuilder := fluentsql.QueryInstance().
+	queryBuilder := qb.QueryInstance().
 		Select(selectColumns...).
 		From(table.Name).
 		Limit(1, 0)
@@ -120,11 +120,11 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 
 		if primaryVal != nil {
 			// Build WHERE condition with specific primary value
-			wherePrimaryCondition := fluentsql.Condition{
+			wherePrimaryCondition := qb.Condition{
 				Field: primaryKey,
-				Opt:   fluentsql.Eq,
+				Opt:   qb.Eq,
 				Value: primaryVal,
-				AndOr: fluentsql.And,
+				AndOr: qb.And,
 			}
 			queryBuilder.WhereCondition(wherePrimaryCondition)
 		}
@@ -135,13 +135,13 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 		// Handle grouped or individual conditions
 		switch {
 		case len(condition.Group) > 0:
-			queryBuilder.WhereGroup(func(whereBuilder fluentsql.WhereBuilder) *fluentsql.WhereBuilder {
+			queryBuilder.WhereGroup(func(whereBuilder qb.WhereBuilder) *qb.WhereBuilder {
 				whereBuilder.WhereCondition(condition.Group...)
 				return &whereBuilder
 			})
-		case condition.AndOr == fluentsql.And:
+		case condition.AndOr == qb.And:
 			queryBuilder.Where(condition.Field, condition.Opt, condition.Value)
-		case condition.AndOr == fluentsql.Or:
+		case condition.AndOr == qb.Or:
 			queryBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 		}
 	}
@@ -182,23 +182,23 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 		orderByField = table.Columns[0].Name
 	}
 
-	var orderByDir fluentsql.OrderByDir
+	var orderByDir qb.OrderByDir
 
 	// Determine order by direction based on the strategy
 	switch {
 	case getType == GetLast && orderByField != "":
-		orderByDir = fluentsql.Desc
+		orderByDir = qb.Desc
 	case getType == GetFirst && orderByField != "":
-		orderByDir = fluentsql.Asc
+		orderByDir = qb.Asc
 	case getType == TakeOne: // Random order by field and direction
 		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(table.Columns)-1)))
 		orderByField = table.Columns[n.Int64()].Name
 
 		n, _ = rand.Int(rand.Reader, big.NewInt(10))
 		if n.Int64()%2 == 1 {
-			orderByDir = fluentsql.Asc
+			orderByDir = qb.Asc
 		} else {
-			orderByDir = fluentsql.Desc
+			orderByDir = qb.Desc
 		}
 	}
 	queryBuilder.OrderBy(orderByField, orderByDir)
@@ -276,7 +276,7 @@ func (db *DBModel) Find(model any) (total int, err error) {
 	}
 
 	// Create query builder
-	queryBuilder := fluentsql.QueryInstance().
+	queryBuilder := qb.QueryInstance().
 		Select(selectColumns...).
 		From(table.Name)
 
@@ -286,14 +286,14 @@ func (db *DBModel) Find(model any) (total int, err error) {
 		switch {
 		case len(condition.Group) > 0:
 			// Append conditions from a group to query builder
-			queryBuilder.WhereGroup(func(whereBuilder fluentsql.WhereBuilder) *fluentsql.WhereBuilder {
+			queryBuilder.WhereGroup(func(whereBuilder qb.WhereBuilder) *qb.WhereBuilder {
 				whereBuilder.WhereCondition(condition.Group...)
 				return &whereBuilder
 			})
-		case condition.AndOr == fluentsql.And:
+		case condition.AndOr == qb.And:
 			// Add Where AND condition
 			queryBuilder.Where(condition.Field, condition.Opt, condition.Value)
-		case condition.AndOr == fluentsql.Or:
+		case condition.AndOr == qb.Or:
 			// Add Where OR condition
 			queryBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 		}

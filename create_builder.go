@@ -3,7 +3,7 @@ package db
 import (
 	"github.com/gflydev/core/errors"
 	"github.com/gflydev/core/log"
-	"github.com/jiveio/fluentsql"
+	qb "github.com/jiveio/fluentsql"
 	"reflect"
 	"slices"
 )
@@ -206,7 +206,7 @@ func (db *DBModel) createByStruct(model any) (err error) {
 	}
 
 	// Build an INSERT SQL statement with the columns and values
-	insertBuilder := fluentsql.InsertInstance().
+	insertBuilder := qb.InsertInstance().
 		Insert(table.Name, columns...).
 		Row(values...)
 

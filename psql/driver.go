@@ -2,11 +2,10 @@ package psql
 
 import (
 	"fmt"
+	"github.com/gflydev/core/utils"
 	"github.com/gflydev/db"
-	"github.com/jiveio/fluentsql"
+	qb "github.com/jiveio/fluentsql"
 	"github.com/jmoiron/sqlx"
-	"os"
-
 	// Autoload driver for PostgreSQL
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -20,8 +19,8 @@ import (
 // Returns:
 // - *PostgreSQL: A new instance of the PostgreSQL driver.
 func New() *PostgreSQL {
-	// Set the database type to PostgreSQL in fluentsql.
-	fluentsql.SetDBType(fluentsql.PostgreSQL)
+	// Set the database type to PostgreSQL in qb.
+	qb.SetDialect(new(qb.PostgreSQLDialect))
 
 	// Create and return a new PostgreSQL driver instance.
 	return &PostgreSQL{}
@@ -38,15 +37,15 @@ type PostgreSQL struct{}
 func (d *PostgreSQL) Load() (*sqlx.DB, error) {
 	// Build the PostgreSQL connection URL using environment variables.
 	// Connection URL format:
-	// postgres://username:password@host:port/dbname?sslmode=sslmode
+	// postgres://username:password@host:port/dbname?sslmode=disable
 	connURL := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		os.Getenv("DB_USERNAME"), // Database username
-		os.Getenv("DB_PASSWORD"), // Database password
-		os.Getenv("DB_HOST"),     // Database host
-		os.Getenv("DB_PORT"),     // Database port
-		os.Getenv("DB_NAME"),     // Database name
-		os.Getenv("DB_SSL_MODE"), // SSL mode (e.g., "disable", "require")
+		"postgres://%s:%s@%s:%v/%s?sslmode=%s",
+		utils.Getenv("DB_USERNAME", "user"),    // Database username
+		utils.Getenv("DB_PASSWORD", "secret"),  // Database password
+		utils.Getenv("DB_HOST", "localhost"),   // Host address
+		utils.Getenv("DB_PORT", 5432),          // Port number
+		utils.Getenv("DB_NAME", "gfly"),        // Database name
+		utils.Getenv("DB_SSL_MODE", "disable"), // SSL mode (e.g., "disable", "require")
 	)
 
 	// Establish the database connection using the constructed URL and "pgx" driver.

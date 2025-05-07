@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"github.com/gflydev/core/utils"
-	"github.com/jiveio/fluentsql"
+	qb "github.com/jiveio/fluentsql"
 	"github.com/jmoiron/sqlx"
 	"log"
 )
@@ -25,15 +25,15 @@ type DBModel struct {
 	model any // Model struct for queries.
 	raw   Raw // Raw SQL query and arguments.
 
-	selectStatement      fluentsql.Select  // SQL SELECT statement builder.
-	omitsSelectStatement fluentsql.Select  // SQL SELECT statement builder for omitting columns.
-	whereStatement       fluentsql.Where   // WHERE clause builder.
-	joinStatement        fluentsql.Join    // JOIN clause builder.
-	groupByStatement     fluentsql.GroupBy // GROUP BY clause builder.
-	havingStatement      fluentsql.Having  // HAVING clause builder.
-	orderByStatement     fluentsql.OrderBy // ORDER BY clause builder.
-	limitStatement       fluentsql.Limit   // LIMIT clause builder.
-	fetchStatement       fluentsql.Fetch   // FETCH clause builder, a version of LIMIT.
+	selectStatement      qb.Select  // SQL SELECT statement builder.
+	omitsSelectStatement qb.Select  // SQL SELECT statement builder for omitting columns.
+	whereStatement       qb.Where   // WHERE clause builder.
+	joinStatement        qb.Join    // JOIN clause builder.
+	groupByStatement     qb.GroupBy // GROUP BY clause builder.
+	havingStatement      qb.Having  // HAVING clause builder.
+	orderByStatement     qb.OrderBy // ORDER BY clause builder.
+	limitStatement       qb.Limit   // LIMIT clause builder.
+	fetchStatement       qb.Fetch   // FETCH clause builder, a version of LIMIT.
 }
 
 // Instance creates and returns a new DBModel instance.
@@ -54,17 +54,17 @@ func Instance() *DBModel {
 //
 //	*DBModel - The reset DBModel instance.
 func (db *DBModel) reset() *DBModel {
-	db.model = nil                                          // Clear the model.
-	db.raw.sqlStr = ""                                      // Reset raw SQL string.
-	db.selectStatement.Columns = []any{}                    // Clear SELECT columns.
-	db.omitsSelectStatement.Columns = []any{}               // Clear omitted SELECT columns.
-	db.whereStatement.Conditions = []fluentsql.Condition{}  // Clear WHERE conditions.
-	db.joinStatement.Items = []fluentsql.JoinItem{}         // Clear JOIN items.
-	db.groupByStatement.Items = []string{}                  // Clear GROUP BY items.
-	db.havingStatement.Conditions = []fluentsql.Condition{} // Clear HAVING conditions.
-	db.orderByStatement.Items = []fluentsql.SortItem{}      // Clear ORDER BY items.
-	db.limitStatement.Limit = 0                             // Reset limit.
-	db.fetchStatement.Fetch = 0                             // Reset fetch.
+	db.model = nil                                   // Clear the model.
+	db.raw.sqlStr = ""                               // Reset raw SQL string.
+	db.selectStatement.Columns = []any{}             // Clear SELECT columns.
+	db.omitsSelectStatement.Columns = []any{}        // Clear omitted SELECT columns.
+	db.whereStatement.Conditions = []qb.Condition{}  // Clear WHERE conditions.
+	db.joinStatement.Items = []qb.JoinItem{}         // Clear JOIN items.
+	db.groupByStatement.Items = []string{}           // Clear GROUP BY items.
+	db.havingStatement.Conditions = []qb.Condition{} // Clear HAVING conditions.
+	db.orderByStatement.Items = []qb.SortItem{}      // Clear ORDER BY items.
+	db.limitStatement.Limit = 0                      // Reset limit.
+	db.fetchStatement.Fetch = 0                      // Reset fetch.
 
 	return db
 }
@@ -76,12 +76,12 @@ func (db *DBModel) reset() *DBModel {
 // get performs fetching a single data row using QueryBuilder.
 //
 // Parameters:
-//   - q (*fluentsql.QueryBuilder): The query builder comprising the SQL query and arguments.
+//   - q (*qb.QueryBuilder): The query builder comprising the SQL query and arguments.
 //   - model (any): The model to map the resulting row.
 //
 // Returns:
 //   - err (error): Error encountered during execution, if any.
-func (db *DBModel) get(q *fluentsql.QueryBuilder, model any) (err error) {
+func (db *DBModel) get(q *qb.QueryBuilder, model any) (err error) {
 	var sqlStr string
 	var args []any
 
@@ -116,12 +116,12 @@ func (db *DBModel) getRaw(sqlStr string, args []any, model any) (err error) {
 // query performs querying a list of data rows using QueryBuilder.
 //
 // Parameters:
-//   - q (*fluentsql.QueryBuilder): The query builder with the SQL and arguments.
+//   - q (*qb.QueryBuilder): The query builder with the SQL and arguments.
 //   - model (any): The model to map the resulting rows.
 //
 // Returns:
 //   - err (error): Error encountered during execution, if any.
-func (db *DBModel) query(q *fluentsql.QueryBuilder, model any) (err error) {
+func (db *DBModel) query(q *qb.QueryBuilder, model any) (err error) {
 	var sqlStr string
 	var args []any
 
@@ -156,13 +156,13 @@ func (db *DBModel) queryRaw(sqlStr string, args []any, model any) (err error) {
 // add performs inserting new data using InsertBuilder and returns the inserted ID.
 //
 // Parameters:
-//   - q (*fluentsql.InsertBuilder): The insert query builder with the SQL and arguments.
+//   - q (*qb.InsertBuilder): The insert query builder with the SQL and arguments.
 //   - primaryColumn (string): The primary column to return, used for PostgreSQL.
 //
 // Returns:
 //   - id (any): The ID of the newly inserted row.
 //   - err (error): Error encountered during execution, if any.
-func (db *DBModel) add(q *fluentsql.InsertBuilder, primaryColumn string) (id any, err error) {
+func (db *DBModel) add(q *qb.InsertBuilder, primaryColumn string) (id any, err error) {
 	var sqlStr string
 	var args []any
 
@@ -187,7 +187,7 @@ func (db *DBModel) addRaw(sqlStr string, args []any, primaryColumn string) (id a
 	}
 
 	// Data persistence
-	if fluentsql.DBType() == fluentsql.PostgreSQL {
+	if qb.IsDialect(qb.PostgreSQL) {
 		if primaryColumn != "" {
 			sqlStr += " RETURNING " + primaryColumn
 
@@ -201,7 +201,7 @@ func (db *DBModel) addRaw(sqlStr string, args []any, primaryColumn string) (id a
 		} else {
 			err = dbInstance.QueryRow(sqlStr, args...).Scan(&id)
 		}
-	} else if fluentsql.DBType() == fluentsql.MySQL {
+	} else if qb.IsDialect(qb.MySQL) {
 		var result sql.Result
 		if db.tx != nil {
 			result, _ = db.tx.Exec(sqlStr, args...)
@@ -218,11 +218,11 @@ func (db *DBModel) addRaw(sqlStr string, args []any, primaryColumn string) (id a
 // update performs updating data using UpdateBuilder.
 //
 // Parameters:
-//   - q (*fluentsql.UpdateBuilder): The update query builder with the SQL and arguments.
+//   - q (*qb.UpdateBuilder): The update query builder with the SQL and arguments.
 //
 // Returns:
 //   - err (error): Error encountered during execution, if any.
-func (db *DBModel) update(q *fluentsql.UpdateBuilder) (err error) {
+func (db *DBModel) update(q *qb.UpdateBuilder) (err error) {
 	var sqlStr string
 	var args []any
 
@@ -234,11 +234,11 @@ func (db *DBModel) update(q *fluentsql.UpdateBuilder) (err error) {
 // delete performs deleting data using DeleteBuilder.
 //
 // Parameters:
-//   - q (*fluentsql.DeleteBuilder): The delete query builder with the SQL and arguments.
+//   - q (*qb.DeleteBuilder): The delete query builder with the SQL and arguments.
 //
 // Returns:
 //   - err (error): Error encountered during execution, if any.
-func (db *DBModel) delete(q *fluentsql.DeleteBuilder) (err error) {
+func (db *DBModel) delete(q *qb.DeleteBuilder) (err error) {
 	var sqlStr string
 	var args []any
 
@@ -273,21 +273,21 @@ func (db *DBModel) execRaw(sqlStr string, args []any) (err error) {
 // count retrieves the total number of rows based on the QueryBuilder.
 //
 // Parameters:
-//   - q (*fluentsql.QueryBuilder): The query builder with the SQL and arguments.
+//   - q (*qb.QueryBuilder): The query builder with the SQL and arguments.
 //   - total (*int): Pointer to an integer to store the total count.
 //
 // Returns:
 //   - err (error): Error encountered during execution, if any.
-func (db *DBModel) count(q *fluentsql.QueryBuilder, total *int) error {
-	var fetch fluentsql.Fetch
-	var limit fluentsql.Limit
+func (db *DBModel) count(q *qb.QueryBuilder, total *int) error {
+	var fetch qb.Fetch
+	var limit qb.Limit
 
 	// Build SQL without pagination
 	fetch = q.RemoveFetch()
 	limit = q.RemoveLimit()
 
 	// Create COUNT query
-	sqlBuilderCount := fluentsql.QueryInstance().
+	sqlBuilderCount := qb.QueryInstance().
 		Select("COUNT(*) AS total").
 		From(q, "_result_out_")
 
@@ -365,17 +365,17 @@ func (db *DBModel) Model(model any) *DBModel {
 //
 // Parameters:
 //   - field (any): The field or column to filter.
-//   - opt (fluentsql.WhereOpt): The operator to use (e.g., equals, greater than).
+//   - opt (qb.WhereOpt): The operator to use (e.g., equals, greater than).
 //   - value (any): The value to compare against.
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) Where(field any, opt fluentsql.WhereOpt, value any) *DBModel {
-	db.whereStatement.Append(fluentsql.Condition{
+func (db *DBModel) Where(field any, opt qb.WhereOpt, value any) *DBModel {
+	db.whereStatement.Append(qb.Condition{
 		Field: field,
 		Opt:   opt,
 		Value: value,
-		AndOr: fluentsql.And,
+		AndOr: qb.And,
 	})
 
 	return db
@@ -385,17 +385,17 @@ func (db *DBModel) Where(field any, opt fluentsql.WhereOpt, value any) *DBModel 
 //
 // Parameters:
 //   - field (any): The field or column to filter.
-//   - opt (fluentsql.WhereOpt): The operator to use.
+//   - opt (qb.WhereOpt): The operator to use.
 //   - value (any): The value to compare against.
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) WhereOr(field any, opt fluentsql.WhereOpt, value any) *DBModel {
-	db.whereStatement.Append(fluentsql.Condition{
+func (db *DBModel) WhereOr(field any, opt qb.WhereOpt, value any) *DBModel {
+	db.whereStatement.Append(qb.Condition{
 		Field: field,
 		Opt:   opt,
 		Value: value,
-		AndOr: fluentsql.Or,
+		AndOr: qb.Or,
 	})
 
 	return db
@@ -404,15 +404,15 @@ func (db *DBModel) WhereOr(field any, opt fluentsql.WhereOpt, value any) *DBMode
 // WhereGroup combines multiple WHERE conditions into a group.
 //
 // Parameters:
-//   - groupCondition (fluentsql.FnWhereBuilder): The function to build grouped conditions.
+//   - groupCondition (qb.FnWhereBuilder): The function to build grouped conditions.
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) WhereGroup(groupCondition fluentsql.FnWhereBuilder) *DBModel {
+func (db *DBModel) WhereGroup(groupCondition qb.FnWhereBuilder) *DBModel {
 	// Create new WhereBuilder
-	whereBuilder := groupCondition(*fluentsql.WhereInstance())
+	whereBuilder := groupCondition(*qb.WhereInstance())
 
-	cond := fluentsql.Condition{
+	cond := qb.Condition{
 		Group: whereBuilder.Conditions(),
 	}
 
@@ -425,17 +425,17 @@ func (db *DBModel) WhereGroup(groupCondition fluentsql.FnWhereBuilder) *DBModel 
 //
 // Parameters:
 //   - condition (bool): Determines whether the condition should be applied.
-//   - groupCondition (fluentsql.FnWhereBuilder): The function to build the condition.
+//   - groupCondition (qb.FnWhereBuilder): The function to build the condition.
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) When(condition bool, groupCondition fluentsql.FnWhereBuilder) *DBModel {
+func (db *DBModel) When(condition bool, groupCondition qb.FnWhereBuilder) *DBModel {
 	if !condition {
 		return db
 	}
 
 	// Create new WhereBuilder
-	whereBuilder := groupCondition(*fluentsql.WhereInstance())
+	whereBuilder := groupCondition(*qb.WhereInstance())
 
 	db.whereStatement.Conditions = append(db.whereStatement.Conditions, whereBuilder.Conditions()...)
 
@@ -445,14 +445,14 @@ func (db *DBModel) When(condition bool, groupCondition fluentsql.FnWhereBuilder)
 // Join adds a JOIN clause to the query.
 //
 // Parameters:
-//   - join (fluentsql.JoinType): The type of join (e.g., INNER, LEFT).
+//   - join (qb.JoinType): The type of join (e.g., INNER, LEFT).
 //   - table (string): The name of the table to join.
-//   - condition (fluentsql.Condition): The condition for the join.
+//   - condition (qb.Condition): The condition for the join.
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) Join(join fluentsql.JoinType, table string, condition fluentsql.Condition) *DBModel {
-	db.joinStatement.Append(fluentsql.JoinItem{
+func (db *DBModel) Join(join qb.JoinType, table string, condition qb.Condition) *DBModel {
+	db.joinStatement.Append(qb.JoinItem{
 		Join:      join,
 		Table:     table,
 		Condition: condition,
@@ -465,17 +465,17 @@ func (db *DBModel) Join(join fluentsql.JoinType, table string, condition fluents
 //
 // Parameters:
 //   - field (any): The field or column to filter.
-//   - opt (fluentsql.WhereOpt): The operator to use.
+//   - opt (qb.WhereOpt): The operator to use.
 //   - value (any): The value to compare against.
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) Having(field any, opt fluentsql.WhereOpt, value any) *DBModel {
-	db.havingStatement.Append(fluentsql.Condition{
+func (db *DBModel) Having(field any, opt qb.WhereOpt, value any) *DBModel {
+	db.havingStatement.Append(qb.Condition{
 		Field: field,
 		Opt:   opt,
 		Value: value,
-		AndOr: fluentsql.And,
+		AndOr: qb.And,
 	})
 
 	return db
@@ -498,11 +498,11 @@ func (db *DBModel) GroupBy(fields ...string) *DBModel {
 //
 // Parameters:
 //   - field (string): The field to sort by.
-//   - dir (fluentsql.OrderByDir): The sorting direction (e.g., ASC or DESC).
+//   - dir (qb.OrderByDir): The sorting direction (e.g., ASC or DESC).
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) OrderBy(field string, dir fluentsql.OrderByDir) *DBModel {
+func (db *DBModel) OrderBy(field string, dir qb.OrderByDir) *DBModel {
 	db.orderByStatement.Append(field, dir)
 
 	return db
@@ -526,9 +526,9 @@ func (db *DBModel) Limit(limit, offset int) *DBModel {
 // RemoveLimit removes the LIMIT clause from the query.
 //
 // Returns:
-//   - fluentsql.Limit: The removed limit settings.
-func (db *DBModel) RemoveLimit() fluentsql.Limit {
-	var _limitStatement fluentsql.Limit
+//   - qb.Limit: The removed limit settings.
+func (db *DBModel) RemoveLimit() qb.Limit {
+	var _limitStatement qb.Limit
 
 	_limitStatement.Limit = db.limitStatement.Limit
 	_limitStatement.Offset = db.limitStatement.Offset
@@ -557,9 +557,9 @@ func (db *DBModel) Fetch(offset, fetch int) *DBModel {
 // RemoveFetch removes the FETCH clause from the query.
 //
 // Returns:
-//   - fluentsql.Fetch: The removed fetch settings.
-func (db *DBModel) RemoveFetch() fluentsql.Fetch {
-	var _fetchStatement fluentsql.Fetch
+//   - qb.Fetch: The removed fetch settings.
+func (db *DBModel) RemoveFetch() qb.Fetch {
+	var _fetchStatement qb.Fetch
 
 	_fetchStatement.Offset = db.fetchStatement.Offset
 	_fetchStatement.Fetch = db.fetchStatement.Fetch
@@ -573,8 +573,8 @@ func (db *DBModel) RemoveFetch() fluentsql.Fetch {
 // whereFromModel builds and appends a WHERE clause from the specific model's data.
 //
 // Parameters:
-//   - queryBuilder (*fluentsql.QueryBuilder): The query builder to modify.
-func (tbl *Table) whereFromModel(queryBuilder *fluentsql.QueryBuilder) {
+//   - queryBuilder (*qb.QueryBuilder): The query builder to modify.
+func (tbl *Table) whereFromModel(queryBuilder *qb.QueryBuilder) {
 	if tbl.HasData {
 		for _, column := range tbl.Columns {
 			// Prevent processing meta, relational, and default (zero) column values
@@ -583,7 +583,7 @@ func (tbl *Table) whereFromModel(queryBuilder *fluentsql.QueryBuilder) {
 			}
 
 			// Append query conditions
-			queryBuilder.Where(column.Name, fluentsql.Eq, tbl.Values[column.Name])
+			queryBuilder.Where(column.Name, qb.Eq, tbl.Values[column.Name])
 		}
 	}
 }

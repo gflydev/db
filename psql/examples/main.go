@@ -62,7 +62,7 @@ func (m *HomePage) Handle(c *core.Ctx) error {
 	queryUser()
 
 	// Generic DAO
-	genericDao()
+	//genericDao()
 
 	return c.View("home", core.Data{
 		"title": "gFly | Laravel inspired web framework written in Go",
