@@ -12,13 +12,13 @@ require github.com/gflydev/view/pongo v1.0.3
 
 require github.com/gflydev/db/psql v1.4.3
 
-require github.com/gflydev/db v1.6.0
+require github.com/gflydev/db v1.6.1
 
 require (
 	github.com/brianvoe/gofakeit/v7 v7.2.1
 	github.com/gflydev/session v1.0.2
 	github.com/gflydev/session/memory v1.0.2
-	github.com/jiveio/fluentsql v1.5.1
+	github.com/jivegroup/fluentsql v1.5.2
 	github.com/joho/godotenv v1.5.1
 )
 

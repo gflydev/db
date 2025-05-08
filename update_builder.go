@@ -3,7 +3,7 @@ package db
 import (
 	"github.com/gflydev/core/errors"
 	"github.com/gflydev/core/log"
-	qb "github.com/jiveio/fluentsql"
+	qb "github.com/jivegroup/fluentsql"
 	"reflect"
 )
 

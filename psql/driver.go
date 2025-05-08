@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/gflydev/core/utils"
 	"github.com/gflydev/db"
-	qb "github.com/jiveio/fluentsql"
+	qb "github.com/jivegroup/fluentsql"
 	"github.com/jmoiron/sqlx"
 	// Autoload driver for PostgreSQL
 	_ "github.com/jackc/pgx/v5/stdlib"

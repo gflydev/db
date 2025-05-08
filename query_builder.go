@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/gflydev/core/errors"
-	qb "github.com/jiveio/fluentsql"
+	qb "github.com/jivegroup/fluentsql"
 	"math/big"
 	"reflect"
 )

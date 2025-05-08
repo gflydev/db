@@ -2,7 +2,7 @@ package db
 
 import (
 	"github.com/gflydev/core/errors"
-	qb "github.com/jiveio/fluentsql"
+	qb "github.com/jivegroup/fluentsql"
 )
 
 // Delete performs the deletion of data for a given table using a model of type Struct or *Struct.

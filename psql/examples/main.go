@@ -14,7 +14,7 @@ import (
 	"github.com/gflydev/session"
 	sessionMemory "github.com/gflydev/session/memory"
 	"github.com/gflydev/view/pongo"
-	qb "github.com/jiveio/fluentsql"
+	qb "github.com/jivegroup/fluentsql"
 	"time"
 
 	// Autoload .env file

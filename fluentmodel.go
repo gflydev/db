@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"github.com/gflydev/core/utils"
-	qb "github.com/jiveio/fluentsql"
+	qb "github.com/jivegroup/fluentsql"
 	"github.com/jmoiron/sqlx"
 	"log"
 )

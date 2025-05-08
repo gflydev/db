@@ -65,7 +65,7 @@ Basic methods to create CRUD actions
 ```go
 import (
     mb "github.com/gflydev/db" // Model builder
-    qb "github.com/jiveio/fluentsql" // Query builder
+    qb "github.com/jivegroup/fluentsql" // Query builder
 )
 ...
 // ----- GetModelByID -----
@@ -121,7 +121,7 @@ log.Info("Update \n", user1.Fullname)
 ```go
 import (
     mb "github.com/gflydev/db" // Model builder
-    qb "github.com/jiveio/fluentsql" // Query builder
+    qb "github.com/jivegroup/fluentsql" // Query builder
 )
 ```
 

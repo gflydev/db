@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/gflydev/core/log"
 	"github.com/gflydev/core/try"
-	qb "github.com/jiveio/fluentsql" // Query builder
+	qb "github.com/jivegroup/fluentsql" // Query builder
 )
 
 // ====================================================================
