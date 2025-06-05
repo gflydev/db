@@ -17,7 +17,8 @@ func (db *DBModel) Delete(model any) error {
 
 	// Delete using raw SQL if it's set.
 	if db.raw.sqlStr != "" {
-		if err = db.execRaw(db.raw.sqlStr, db.raw.args); err != nil {
+		err = db.execRaw(db.raw.sqlStr, db.raw.args)
+		if err != nil {
 			return err
 		}
 
