@@ -7,8 +7,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gflydev/core v1.13.4 h1:XOugGDspikSEjzFrbNZV9XVMPIaIBwf8Wd7opgQWX0w=
 github.com/gflydev/core v1.13.4/go.mod h1:1w9v+OGY4S2YCsCxz7PIxWRXtyByYLEl6HB1EKvYZK0=
-github.com/gflydev/db v1.6.1 h1:T9qEbcfupkbyGmyZpD5UxoTK8HWleDf/aNNONkC/dqg=
-github.com/gflydev/db v1.6.1/go.mod h1:LUX4EfthS+XOT/4h5nHzHBDluWSWvymvBbcXAb23pbw=
+github.com/gflydev/db v1.6.2 h1:vqxZ7m2sEAwb8RAh7LxAiePIEznfdW1g1FzLv8iL4Dw=
+github.com/gflydev/db v1.6.2/go.mod h1:T/ju9gToqBmLNfFshDWwYbTjSxB03UHwL7AizDf+qko=
 github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpvNJ1Y=
 github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
@@ -21,8 +21,6 @@ github.com/jackc/puddle/v2 v2.2.2 h1:PR8nw+E/1w0GLuRFSmiioY6UooMp6KJv0/61nB7icHo
 github.com/jackc/puddle/v2 v2.2.2/go.mod h1:vriiEXHvEE654aYKXXjOvZM39qJ0q+azkZFrfEOc3H4=
 github.com/jivegroup/fluentsql v1.5.2 h1:Q1yRkfrlbOnFmYT0TM40PygsFt1LoaFBlDo4B2QrNf4=
 github.com/jivegroup/fluentsql v1.5.2/go.mod h1:PboV3MLQCc2mM1AyFpqRy9XZKgkng90k68JIwXKTPNU=
-github.com/jiveio/fluentsql v1.5.1 h1:2s0OLUJeFrmoY4VQcAFHW40Z0ibc54HRtnFaJf7oIW0=
-github.com/jiveio/fluentsql v1.5.1/go.mod h1:SXSRbuBAqsOIJYSRj78nE2y1/ri27h4LzmoClHAeSjg=
 github.com/jmoiron/sqlx v1.4.0 h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o=
 github.com/jmoiron/sqlx v1.4.0/go.mod h1:ZrZ7UsYB/weZdl2Bxg6jCRO9c3YHl8r3ahlKmRT4JLY=
 github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo=

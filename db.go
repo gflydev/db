@@ -105,8 +105,7 @@ func Load() {
 	var err error
 
 	// Load the database connection using the registered driver.
-	dbInstance.DB, err = dbDriver.Load()
-	if err != nil {
+	if dbInstance.DB, err = dbDriver.Load(); err != nil {
 		// If an error occurs, panic to prevent further execution.
 		panic(err)
 	}

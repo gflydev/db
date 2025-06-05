@@ -75,7 +75,7 @@ func setValue(model any, key string, data any) (err error) {
 	}
 
 	// Check if the value is valid and not zero
-	// IsZero panics if the value is invalid. Most functions and methods never return an invalid Value.
+	// IsZero if the value is invalid. Most functions and methods never return an invalid Value.
 	isSet := val.IsValid() && !val.IsZero()
 
 	if isSet {

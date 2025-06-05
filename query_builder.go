@@ -73,10 +73,6 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 			err = dbInstance.Get(model, db.raw.sqlStr, db.raw.args...)
 		}
 
-		if err != nil {
-			panic(err)
-		}
-
 		// Reset fluent model builder
 		db.reset()
 
@@ -96,7 +92,7 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 	// Create a table object from a model
 	table, err = ModelData(model)
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	// Define the columns to be queried
@@ -204,9 +200,7 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 	queryBuilder.OrderBy(orderByField, orderByDir)
 
 	// Data processing using the constructed query
-	if err = db.get(queryBuilder, model); err != nil {
-		panic(err)
-	}
+	err = db.get(queryBuilder, model)
 
 	// Reset fluent model builder
 	db.reset()
@@ -237,15 +231,14 @@ func (db *DBModel) Find(model any) (total int, err error) {
 		}
 
 		if err != nil {
-			panic(err)
+			return
 		}
 
 		// Query COUNT
 		sqlCount := fmt.Sprintf("SELECT COUNT(*) AS total FROM (%s) _result_out_", db.raw.sqlStr)
-		err = db.getRaw(sqlCount, db.raw.args, &total)
 
-		if err != nil {
-			panic(err)
+		if err = db.getRaw(sqlCount, db.raw.args, &total); err != nil {
+			return
 		}
 
 		// Reset fluent model builder
@@ -257,7 +250,9 @@ func (db *DBModel) Find(model any) (total int, err error) {
 	// Validate input type
 	typ := reflect.TypeOf(model)
 	if !(typ.Kind() == reflect.Ptr && typ.Elem().Kind() == reflect.Slice) {
-		panic(errors.New("Invalid data :: model not *Slice type"))
+		err = errors.New("Invalid data :: model not *Slice type")
+
+		return
 	}
 
 	var table *Table
@@ -334,12 +329,12 @@ func (db *DBModel) Find(model any) (total int, err error) {
 
 	// Execute query and populate model
 	if err = db.query(queryBuilder, model); err != nil {
-		panic(err)
+		return
 	}
 
 	// Execute count query to get the total number of rows
 	if err = db.count(queryBuilder, &total); err != nil {
-		panic(err)
+		return
 	}
 
 	// Reset fluent model builder

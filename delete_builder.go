@@ -17,10 +17,8 @@ func (db *DBModel) Delete(model any) error {
 
 	// Delete using raw SQL if it's set.
 	if db.raw.sqlStr != "" {
-		err = db.execRaw(db.raw.sqlStr, db.raw.args)
-
-		if err != nil {
-			panic(err) // Panic if raw SQL execution fails.
+		if err = db.execRaw(db.raw.sqlStr, db.raw.args); err != nil {
+			return err
 		}
 
 		// Reset fluent model builder.
@@ -31,14 +29,12 @@ func (db *DBModel) Delete(model any) error {
 	var hasCondition = false // Indicates if any WHERE condition is present.
 
 	// Create a table object from the given model.
-	table, err = ModelData(model)
-	if err != nil {
-		panic(err) // Panic if creating the table object from the model fails.
+	if table, err = ModelData(model); err != nil {
+		return err
 	}
 
 	// Create an instance of a delete query builder.
-	deleteBuilder := qb.DeleteInstance().
-		Delete(table.Name)
+	deleteBuilder := qb.DeleteInstance().Delete(table.Name)
 
 	// Build WHERE clause using primary columns of the table.
 	for _, primaryColumn := range table.Primaries {
@@ -80,9 +76,9 @@ func (db *DBModel) Delete(model any) error {
 		}
 	}
 
-	// Ensure there is at least one WHERE condition; otherwise, panic.
+	// Ensure there is at least one WHERE condition.
 	if !hasCondition {
-		panic(errors.New("Missing WHERE condition for deleting operator"))
+		return errors.New("Missing WHERE condition for deleting operator")
 	}
 
 	// Execute the delete operation using the constructed delete builder.

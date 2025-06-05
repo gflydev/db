@@ -56,7 +56,7 @@ func (db *DBModel) createByRaw(model any) error {
 	// Create a table object from a model
 	table, err = ModelData(model)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var id any
@@ -70,12 +70,13 @@ func (db *DBModel) createByRaw(model any) error {
 	// Perform raw insertion and retrieve the ID
 	id, err = db.addRaw(db.raw.sqlStr, db.raw.args, primaryColumn.Name)
 
+	if err != nil {
+		return err
+	}
+
 	// Set ID back to the model
 	if primaryColumn.Key != "" {
 		err = setValue(model, primaryColumn.Key, id)
-		if err != nil {
-			panic(err)
-		}
 	}
 
 	return err
@@ -123,9 +124,7 @@ func (db *DBModel) createByMap(value any) error {
 	}
 
 	// Use the model to perform a structured insert
-	err = db.createByStruct(db.model)
-
-	return err
+	return db.createByStruct(db.model)
 }
 
 // createBySlice inserts multiple records by reflecting over a Slice of models.
@@ -177,9 +176,8 @@ func (db *DBModel) createByStruct(model any) (err error) {
 	var values []any
 
 	// Create a table object from a model
-	table, err = ModelData(model)
-	if err != nil {
-		panic(err)
+	if table, err = ModelData(model); err != nil {
+		return
 	}
 
 	// Generate insert columns and values by iterating over table columns
@@ -219,9 +217,8 @@ func (db *DBModel) createByStruct(model any) (err error) {
 	}
 
 	// Perform the insert and retrieve the ID
-	id, err = db.add(insertBuilder, primaryColumn.Name)
-	if err != nil {
-		panic(err)
+	if id, err = db.add(insertBuilder, primaryColumn.Name); err != nil {
+		return
 	}
 
 	// Set the ID back to the model

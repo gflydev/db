@@ -102,7 +102,7 @@ func ModelData(model any) (*Table, error) {
 	}
 
 	// Return an error if the input is not a struct
-	return nil, errors.New("input param should be a struct")
+	return nil, errors.New("Input param should be a struct")
 }
 
 // ====================================================================
@@ -131,7 +131,6 @@ func processModel(typ reflect.Type, value reflect.Value, tbl *Table) *Table {
 
 		// Get the value of the field.
 		var valueField reflect.Value
-		// FIX: Handle panic caused by field index mismatch.
 		if value.NumField() == typ.NumField() {
 			valueField = value.Field(i)
 		} else {

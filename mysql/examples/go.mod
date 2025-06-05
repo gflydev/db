@@ -23,7 +23,7 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/flosch/pongo2/v6 v6.0.0 // indirect
 	github.com/go-sql-driver/mysql v1.9.2 // indirect
-	github.com/jiveio/fluentsql v1.5.1 // indirect
+	github.com/jivegroup/fluentsql v1.5.2 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect

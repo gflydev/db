@@ -36,6 +36,7 @@ github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpv
 github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
 github.com/go-sql-driver/mysql v1.9.2 h1:4cNKDYQ1I84SXslGddlsrMhc8k4LeDVj6Ad6WRjiHuU=
 github.com/go-sql-driver/mysql v1.9.2/go.mod h1:qn46aNg1333BRMNU69Lq93t8du/dwxI64Gl8i5p1WMU=
+github.com/jivegroup/fluentsql v1.5.2/go.mod h1:PboV3MLQCc2mM1AyFpqRy9XZKgkng90k68JIwXKTPNU=
 github.com/jiveio/fluentsql v1.3.9 h1:1ogVfLDgMiB0Lho5t7q25kHe8kxH7YjQBu1to1Pm4p8=
 github.com/jiveio/fluentsql v1.3.9/go.mod h1:SXSRbuBAqsOIJYSRj78nE2y1/ri27h4LzmoClHAeSjg=
 github.com/jiveio/fluentsql v1.5.0 h1:sQqIqUGXE1ULxu5j8y/tBHnybuRWJZBJhFAPrtrwfD0=

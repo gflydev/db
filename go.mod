@@ -3,7 +3,7 @@ module github.com/gflydev/db
 go 1.24.0
 
 require (
-	github.com/gflydev/core v1.13.4
+	github.com/gflydev/core v1.15.5
 	github.com/jivegroup/fluentsql v1.5.2
 	github.com/jmoiron/sqlx v1.4.0
 )

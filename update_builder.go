@@ -29,11 +29,6 @@ func (db *DBModel) Update(model any) (err error) {
 		err = db.updateByStruct(model)
 	}
 
-	if err != nil {
-		// Panic in case of an error
-		panic(err)
-	}
-
 	// Reset fluent model builder
 	db.reset()
 
@@ -78,9 +73,7 @@ func (db *DBModel) updateByMap(value any) error {
 	}
 
 	// Delegate the updated model to the struct update function
-	err = db.updateByStruct(db.model)
-
-	return err
+	return db.updateByStruct(db.model)
 }
 
 // updateByStruct Update modifies table data using a data model.
@@ -97,15 +90,12 @@ func (db *DBModel) updateByStruct(model any) (err error) {
 	)
 
 	// Create a table object from the data model.
-	table, err = ModelData(model)
-	if err != nil {
-		// Panic if an error occurs while creating the table.
-		panic(err)
+	if table, err = ModelData(model); err != nil {
+		return
 	}
 
 	// Initialize the Update query builder for the target database table.
-	updateBuilder := qb.UpdateInstance().
-		Update(table.Name)
+	updateBuilder := qb.UpdateInstance().Update(table.Name)
 
 	// Build WHERE conditions from pre-defined conditions in 'whereStatement'.
 	for _, condition := range db.whereStatement.Conditions {
@@ -143,7 +133,8 @@ func (db *DBModel) updateByStruct(model any) (err error) {
 
 	// Panic if no WHERE condition exists to prevent accidental updates to all rows.
 	if !hasCondition {
-		panic(errors.New("missing WHERE condition for updating operator"))
+		err = errors.New("missing WHERE condition for updating operator")
+		return
 	}
 
 	// Iterate through the table's columns and add SET clauses for valid data fields.
