@@ -6,11 +6,17 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gflydev/core v1.13.4 h1:XOugGDspikSEjzFrbNZV9XVMPIaIBwf8Wd7opgQWX0w=
 github.com/gflydev/core v1.13.4/go.mod h1:1w9v+OGY4S2YCsCxz7PIxWRXtyByYLEl6HB1EKvYZK0=
+github.com/gflydev/core v1.16.0 h1:Zhe/YNa/TDFRbJm0TkD+U0MKxJ1g0qKFovAaAlNYNLg=
+github.com/gflydev/core v1.16.0/go.mod h1:PXw2qZiDCTbu7ms87g0inJYrrHuoceDbL+4G2xomPNE=
 github.com/gflydev/db v1.6.2 h1:vqxZ7m2sEAwb8RAh7LxAiePIEznfdW1g1FzLv8iL4Dw=
 github.com/gflydev/db v1.6.2/go.mod h1:T/ju9gToqBmLNfFshDWwYbTjSxB03UHwL7AizDf+qko=
+github.com/gflydev/db v1.6.4 h1:eKKb8CvIXJqQLseFH5DuG0JxGwaqTq81Biblbgm1bdE=
+github.com/gflydev/db v1.6.4/go.mod h1:CgR+e0WEwrluW0Spy9x1g3MG8DStCPHHEnjp6iuiIhg=
 github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
 github.com/go-sql-driver/mysql v1.9.2 h1:4cNKDYQ1I84SXslGddlsrMhc8k4LeDVj6Ad6WRjiHuU=
 github.com/go-sql-driver/mysql v1.9.2/go.mod h1:qn46aNg1333BRMNU69Lq93t8du/dwxI64Gl8i5p1WMU=
+github.com/go-sql-driver/mysql v1.9.3 h1:U/N249h2WzJ3Ukj8SowVFjdtZKfu9vlLZxjPXV1aweo=
+github.com/go-sql-driver/mysql v1.9.3/go.mod h1:qn46aNg1333BRMNU69Lq93t8du/dwxI64Gl8i5p1WMU=
 github.com/jivegroup/fluentsql v1.5.2 h1:Q1yRkfrlbOnFmYT0TM40PygsFt1LoaFBlDo4B2QrNf4=
 github.com/jivegroup/fluentsql v1.5.2/go.mod h1:PboV3MLQCc2mM1AyFpqRy9XZKgkng90k68JIwXKTPNU=
 github.com/jmoiron/sqlx v1.4.0 h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o=
@@ -33,5 +39,7 @@ github.com/xyproto/randomstring v1.0.5 h1:YtlWPoRdgMu3NZtP45drfy1GKoojuR7hmRcnhZ
 github.com/xyproto/randomstring v1.0.5/go.mod h1:rgmS5DeNXLivK7YprL0pY+lTuhNQW3iGxZ18UQApw/E=
 golang.org/x/crypto v0.38.0 h1:jt+WWG8IZlBnVbomuhg2Mdq0+BBQaHbtqHEFEigjUV8=
 golang.org/x/crypto v0.38.0/go.mod h1:MvrbAqul58NNYPKnOra203SB9vpuZW0e+RRZV+Ggqjw=
+golang.org/x/crypto v0.39.0 h1:SHs+kF4LP+f+p14esP5jAoDpHU8Gu/v9lFRK6IT5imM=
+golang.org/x/crypto v0.39.0/go.mod h1:L+Xg3Wf6HoL4Bn4238Z6ft6KfEpN0tJGo53AAPC632U=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=

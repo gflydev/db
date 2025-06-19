@@ -2,7 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"errors"
+	"github.com/gflydev/core/errors"
 	"github.com/gflydev/core/log"
 	"github.com/gflydev/core/try"
 	qb "github.com/jivegroup/fluentsql" // Query builder
@@ -46,7 +46,13 @@ func GetModelByID[T any](value any) (*T, error) {
 //   - *T: A pointer to the first matching record of type T retrieved from the database, or nil if no record is found.
 //   - error: An error object if an error occurs during the retrieval process.
 func GetModelBy[T any](field string, value any) (*T, error) {
-	return GetModelWhereEq[T](field, value)
+	item, err := GetModelWhereEq[T](field, value)
+	// Log unexpected error!
+	if errors.Is(err, sql.ErrNoRows) {
+		err = errors.ItemNotFound
+	}
+
+	return item, err
 }
 
 // ====================================================================
@@ -84,12 +90,12 @@ func GetModelWhereEq[T any](field string, value any) (*T, error) {
 //   - error: An error object if an error occurs during the retrieval process.
 //     Returns nil if the query succeeds. Logs unexpected errors.
 func GetModel[T any](conditions ...qb.Condition) (*T, error) {
+	var builder = Instance()
 	var err error
 	var m T
 
 	// Try/catch block
 	try.Perform(func() {
-		builder := Instance()
 		for _, condition := range conditions {
 			builder.Where(condition.Field, condition.Opt, condition.Value)
 		}
@@ -103,7 +109,9 @@ func GetModel[T any](conditions ...qb.Condition) (*T, error) {
 		err = e.(error)
 
 		// Log unexpected error!
-		if !errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = errors.ItemNotFound
+		} else {
 			log.Error(e)
 		}
 	})
@@ -125,6 +133,7 @@ func GetModel[T any](conditions ...qb.Condition) (*T, error) {
 //   - (int): The total number of records that match the conditions.
 //   - (error): An error object if an error occurs during the retrieval process.
 func FindModels[T any](page, limit int, sortField string, sortDir qb.OrderByDir, conditions ...qb.Condition) ([]T, int, error) {
+	var builder = Instance()
 	var items []T
 	var total int
 	var err error
@@ -135,7 +144,6 @@ func FindModels[T any](page, limit int, sortField string, sortDir qb.OrderByDir,
 	}
 
 	try.Perform(func() {
-		builder := Instance()
 		for _, condition := range conditions {
 			builder.Where(condition.Field, condition.Opt, condition.Value)
 		}
@@ -150,7 +158,9 @@ func FindModels[T any](page, limit int, sortField string, sortDir qb.OrderByDir,
 		err = e.(error)
 
 		// Log unexpected error!
-		if !errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = errors.ItemNotFound
+		} else {
 			log.Error(e)
 		}
 	})
