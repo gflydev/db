@@ -5,12 +5,20 @@ import (
 	"database/sql/driver"
 )
 
-// ScanByte function will scan NullByte value.
-func ScanByte(nullBool sql.NullByte) driver.Value {
+// ByteAny function will scan NullByte value.
+func ByteAny(nullBool sql.NullByte) driver.Value {
 	if !nullBool.Valid {
 		return nil
 	}
 	return nullBool.Byte
+}
+
+// ByteNil function will scan NullByte value.
+func ByteNil(nullByte sql.NullByte) *byte {
+	if !nullByte.Valid {
+		return nil
+	}
+	return &nullByte.Byte
 }
 
 // Byte function will create a NullByte object.
@@ -40,12 +48,4 @@ func Byte(val any) sql.NullByte {
 			Valid: false,
 		}
 	}
-}
-
-// ByteVal function will scan NullByte value.
-func ByteVal(nullByte sql.NullByte) *byte {
-	if !nullByte.Valid {
-		return nil
-	}
-	return &nullByte.Byte
 }

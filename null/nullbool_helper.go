@@ -5,12 +5,20 @@ import (
 	"database/sql/driver"
 )
 
-// ScanBool function will scan NullBool value.
-func ScanBool(nullBool sql.NullBool) driver.Value {
+// BoolAny function will scan NullBool value.
+func BoolAny(nullBool sql.NullBool) driver.Value {
 	if !nullBool.Valid {
 		return nil
 	}
 	return nullBool.Bool
+}
+
+// BoolNil function will scan NullBool value.
+func BoolNil(nullBool sql.NullBool) *bool {
+	if !nullBool.Valid {
+		return nil
+	}
+	return &nullBool.Bool
 }
 
 // Bool function will create a NullBool object.
@@ -40,12 +48,4 @@ func Bool(val any) sql.NullBool {
 			Valid: false,
 		}
 	}
-}
-
-// BoolVal function will scan NullBool value.
-func BoolVal(nullBool sql.NullBool) *bool {
-	if !nullBool.Valid {
-		return nil
-	}
-	return &nullBool.Bool
 }

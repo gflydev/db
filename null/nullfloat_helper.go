@@ -5,12 +5,20 @@ import (
 	"database/sql/driver"
 )
 
-// ScanFloat64 function will scan NullFloat64 value.
-func ScanFloat64(nullInt sql.NullFloat64) driver.Value {
+// Float64Any function will scan NullFloat64 value.
+func Float64Any(nullInt sql.NullFloat64) driver.Value {
 	if !nullInt.Valid {
 		return nil
 	}
 	return nullInt.Float64
+}
+
+// FloatNil function will scan NullFloat64 value.
+func FloatNil(nullFloat sql.NullFloat64) *float64 {
+	if !nullFloat.Valid {
+		return nil
+	}
+	return &nullFloat.Float64
 }
 
 // Float64 function will create a NullFloat64 object.
@@ -40,12 +48,4 @@ func Float64(val any) sql.NullFloat64 {
 			Valid:   false,
 		}
 	}
-}
-
-// FloatVal function will scan NullFloat64 value.
-func FloatVal(nullFloat sql.NullFloat64) *float64 {
-	if !nullFloat.Valid {
-		return nil
-	}
-	return &nullFloat.Float64
 }

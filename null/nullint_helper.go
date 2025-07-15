@@ -5,12 +5,20 @@ import (
 	"database/sql/driver"
 )
 
-// ScanInt64 function will scan NullInt64 value.
-func ScanInt64(nullInt sql.NullInt64) driver.Value {
+// Int64Any function will scan NullInt64 value.
+func Int64Any(nullInt sql.NullInt64) driver.Value {
 	if !nullInt.Valid {
 		return nil
 	}
 	return nullInt.Int64
+}
+
+// Int64Nil function will scan NullInt64 value.
+func Int64Nil(nullInt sql.NullInt64) *int64 {
+	if !nullInt.Valid {
+		return nil
+	}
+	return &nullInt.Int64
 }
 
 // Int64 function will create a NullInt64 object.
@@ -42,12 +50,20 @@ func Int64(val any) sql.NullInt64 {
 	}
 }
 
-// ScanInt32 function will scan NullInt32 value.
-func ScanInt32(nullInt sql.NullInt32) driver.Value {
+// Int32Any function will scan NullInt32 value.
+func Int32Any(nullInt sql.NullInt32) driver.Value {
 	if !nullInt.Valid {
 		return nil
 	}
 	return nullInt.Int32
+}
+
+// Int32Nil function will scan NullInt32 value.
+func Int32Nil(nullInt sql.NullInt32) *int32 {
+	if !nullInt.Valid {
+		return nil
+	}
+	return &nullInt.Int32
 }
 
 // Int32 function will create a NullInt32 object.
@@ -79,12 +95,20 @@ func Int32(val any) sql.NullInt32 {
 	}
 }
 
-// ScanInt16 function will scan NullInt16 value.
-func ScanInt16(nullInt sql.NullInt16) driver.Value {
+// Int16Any function will scan NullInt16 value.
+func Int16Any(nullInt sql.NullInt16) driver.Value {
 	if !nullInt.Valid {
 		return nil
 	}
 	return nullInt.Int16
+}
+
+// Int16Nil function will scan NullInt16 value.
+func Int16Nil(nullInt sql.NullInt16) *int16 {
+	if !nullInt.Valid {
+		return nil
+	}
+	return &nullInt.Int16
 }
 
 // Int16 function will create a NullInt16 object.
@@ -114,28 +138,4 @@ func Int16(val any) sql.NullInt16 {
 			Valid: false,
 		}
 	}
-}
-
-// Int64Val function will scan NullInt64 value.
-func Int64Val(nullInt sql.NullInt64) *int64 {
-	if !nullInt.Valid {
-		return nil
-	}
-	return &nullInt.Int64
-}
-
-// Int32Val function will scan NullInt32 value.
-func Int32Val(nullInt sql.NullInt32) *int32 {
-	if !nullInt.Valid {
-		return nil
-	}
-	return &nullInt.Int32
-}
-
-// Int16Val function will scan NullInt16 value.
-func Int16Val(nullInt sql.NullInt16) *int16 {
-	if !nullInt.Valid {
-		return nil
-	}
-	return &nullInt.Int16
 }
