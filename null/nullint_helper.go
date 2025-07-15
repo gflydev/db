@@ -14,10 +14,31 @@ func ScanInt64(nullInt sql.NullInt64) driver.Value {
 }
 
 // Int64 function will create a NullInt64 object.
-func Int64(val int64) sql.NullInt64 {
-	return sql.NullInt64{
-		Int64: val,
-		Valid: true,
+// It accepts both int64 and *int64 values.
+func Int64(val any) sql.NullInt64 {
+	switch v := val.(type) {
+	case int64:
+		return sql.NullInt64{
+			Int64: v,
+			Valid: true,
+		}
+	case *int64:
+		if v == nil {
+			return sql.NullInt64{
+				Int64: 0,
+				Valid: false,
+			}
+		}
+		return sql.NullInt64{
+			Int64: *v,
+			Valid: true,
+		}
+	default:
+		// For any other type, return invalid NullInt64
+		return sql.NullInt64{
+			Int64: 0,
+			Valid: false,
+		}
 	}
 }
 
@@ -30,10 +51,31 @@ func ScanInt32(nullInt sql.NullInt32) driver.Value {
 }
 
 // Int32 function will create a NullInt32 object.
-func Int32(val int32) sql.NullInt32 {
-	return sql.NullInt32{
-		Int32: val,
-		Valid: true,
+// It accepts both int32 and *int32 values.
+func Int32(val any) sql.NullInt32 {
+	switch v := val.(type) {
+	case int32:
+		return sql.NullInt32{
+			Int32: v,
+			Valid: true,
+		}
+	case *int32:
+		if v == nil {
+			return sql.NullInt32{
+				Int32: 0,
+				Valid: false,
+			}
+		}
+		return sql.NullInt32{
+			Int32: *v,
+			Valid: true,
+		}
+	default:
+		// For any other type, return invalid NullInt32
+		return sql.NullInt32{
+			Int32: 0,
+			Valid: false,
+		}
 	}
 }
 
@@ -46,10 +88,31 @@ func ScanInt16(nullInt sql.NullInt16) driver.Value {
 }
 
 // Int16 function will create a NullInt16 object.
-func Int16(val int16) sql.NullInt16 {
-	return sql.NullInt16{
-		Int16: val,
-		Valid: true,
+// It accepts both int16 and *int16 values.
+func Int16(val any) sql.NullInt16 {
+	switch v := val.(type) {
+	case int16:
+		return sql.NullInt16{
+			Int16: v,
+			Valid: true,
+		}
+	case *int16:
+		if v == nil {
+			return sql.NullInt16{
+				Int16: 0,
+				Valid: false,
+			}
+		}
+		return sql.NullInt16{
+			Int16: *v,
+			Valid: true,
+		}
+	default:
+		// For any other type, return invalid NullInt16
+		return sql.NullInt16{
+			Int16: 0,
+			Valid: false,
+		}
 	}
 }
 

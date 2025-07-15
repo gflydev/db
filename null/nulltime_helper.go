@@ -15,10 +15,31 @@ func ScanTime(nullTime sql.NullTime) driver.Value {
 }
 
 // Time function will create a NullTime object.
-func Time(val time.Time) sql.NullTime {
-	return sql.NullTime{
-		Time:  val,
-		Valid: true,
+// It accepts both time.Time and *time.Time values.
+func Time(val any) sql.NullTime {
+	switch v := val.(type) {
+	case time.Time:
+		return sql.NullTime{
+			Time:  v,
+			Valid: true,
+		}
+	case *time.Time:
+		if v == nil {
+			return sql.NullTime{
+				Time:  time.Time{},
+				Valid: false,
+			}
+		}
+		return sql.NullTime{
+			Time:  *v,
+			Valid: true,
+		}
+	default:
+		// For any other type, return invalid NullTime
+		return sql.NullTime{
+			Time:  time.Time{},
+			Valid: false,
+		}
 	}
 }
 

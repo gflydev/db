@@ -1,6 +1,10 @@
 mod:
 	go list -m --versions
 
+
+test.null:
+	go test -v ./null
+
 critic:
 	gocritic check -enableAll -disable=unnamedResult,unlabelStmt,hugeParam,singleCaseSwitch,builtinShadow,typeAssertChain ./...
 

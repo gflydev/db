@@ -14,10 +14,31 @@ func ScanBool(nullBool sql.NullBool) driver.Value {
 }
 
 // Bool function will create a NullBool object.
-func Bool(val bool) sql.NullBool {
-	return sql.NullBool{
-		Bool:  val,
-		Valid: true,
+// It accepts both bool and *bool values.
+func Bool(val any) sql.NullBool {
+	switch v := val.(type) {
+	case bool:
+		return sql.NullBool{
+			Bool:  v,
+			Valid: true,
+		}
+	case *bool:
+		if v == nil {
+			return sql.NullBool{
+				Bool:  false,
+				Valid: false,
+			}
+		}
+		return sql.NullBool{
+			Bool:  *v,
+			Valid: true,
+		}
+	default:
+		// For any other type, return invalid NullBool
+		return sql.NullBool{
+			Bool:  false,
+			Valid: false,
+		}
 	}
 }
 

@@ -13,11 +13,32 @@ func ScanByte(nullBool sql.NullByte) driver.Value {
 	return nullBool.Byte
 }
 
-// Byte function will create a NullBool object.
-func Byte(val byte) sql.NullByte {
-	return sql.NullByte{
-		Byte:  val,
-		Valid: true,
+// Byte function will create a NullByte object.
+// It accepts both byte and *byte values.
+func Byte(val any) sql.NullByte {
+	switch v := val.(type) {
+	case byte:
+		return sql.NullByte{
+			Byte:  v,
+			Valid: true,
+		}
+	case *byte:
+		if v == nil {
+			return sql.NullByte{
+				Byte:  0,
+				Valid: false,
+			}
+		}
+		return sql.NullByte{
+			Byte:  *v,
+			Valid: true,
+		}
+	default:
+		// For any other type, return invalid NullByte
+		return sql.NullByte{
+			Byte:  0,
+			Valid: false,
+		}
 	}
 }
 

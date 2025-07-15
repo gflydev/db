@@ -14,10 +14,31 @@ func ScanString(nullString sql.NullString) driver.Value {
 }
 
 // String function will create a NullString object.
-func String(val string) sql.NullString {
-	return sql.NullString{
-		String: val,
-		Valid:  true,
+// It accepts both string and *string values.
+func String(val any) sql.NullString {
+	switch v := val.(type) {
+	case string:
+		return sql.NullString{
+			String: v,
+			Valid:  true,
+		}
+	case *string:
+		if v == nil {
+			return sql.NullString{
+				String: "",
+				Valid:  false,
+			}
+		}
+		return sql.NullString{
+			String: *v,
+			Valid:  true,
+		}
+	default:
+		// For any other type, return invalid NullString
+		return sql.NullString{
+			String: "",
+			Valid:  false,
+		}
 	}
 }
 

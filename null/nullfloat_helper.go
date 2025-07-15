@@ -14,10 +14,31 @@ func ScanFloat64(nullInt sql.NullFloat64) driver.Value {
 }
 
 // Float64 function will create a NullFloat64 object.
-func Float64(val float64) sql.NullFloat64 {
-	return sql.NullFloat64{
-		Float64: val,
-		Valid:   true,
+// It accepts both float64 and *float64 values.
+func Float64(val any) sql.NullFloat64 {
+	switch v := val.(type) {
+	case float64:
+		return sql.NullFloat64{
+			Float64: v,
+			Valid:   true,
+		}
+	case *float64:
+		if v == nil {
+			return sql.NullFloat64{
+				Float64: 0,
+				Valid:   false,
+			}
+		}
+		return sql.NullFloat64{
+			Float64: *v,
+			Valid:   true,
+		}
+	default:
+		// For any other type, return invalid NullFloat64
+		return sql.NullFloat64{
+			Float64: 0,
+			Valid:   false,
+		}
 	}
 }
 
