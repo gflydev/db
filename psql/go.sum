@@ -22,6 +22,7 @@ github.com/gflydev/db v1.7.0 h1:w7XTDwBSFdMbJtg+bKgNa1Wbb2tIpsHHTIf99AAkgTw=
 github.com/gflydev/db v1.7.0/go.mod h1:tkF/Mfm1rAjPk1CuevzkOEuFVZsrfP/lkfnGeovvG1s=
 github.com/gflydev/db v1.9.0 h1:XQbU3BYVLSLnbqbgO2v8zJGumF1dIFVx2qNJ/JQt3m4=
 github.com/gflydev/db v1.9.0/go.mod h1:sMa9y2HcBFJNGFpi8eFEwHjsTFttnwltfWb9Idt6Vss=
+github.com/gflydev/db/v2 v2.0.1/go.mod h1:a7lqgJBsMs5J6YGA/k++9+2B8elKUgujerINABLXhVc=
 github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpvNJ1Y=
 github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=

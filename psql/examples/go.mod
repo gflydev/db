@@ -2,24 +2,24 @@ module examples
 
 go 1.24.0
 
-require github.com/gflydev/core v1.15.5
+require github.com/gflydev/core v1.17.2
 
 require github.com/gflydev/view/pongo v1.0.3
 
 require github.com/gflydev/db/psql v1.4.5
 
-require github.com/gflydev/db v1.6.3
+require github.com/gflydev/db/v2 v2.0.1
 
 require (
 	github.com/brianvoe/gofakeit/v7 v7.2.1
 	github.com/gflydev/session v1.0.2
 	github.com/gflydev/session/memory v1.0.2
-	github.com/jivegroup/fluentsql v1.5.2
+	github.com/jivegroup/fluentsql v1.5.3
 	github.com/joho/godotenv v1.5.1
 )
 
 require (
-	github.com/andybalholm/brotli v1.1.1 // indirect
+	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/flosch/pongo2/v6 v6.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -35,9 +35,9 @@ require (
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/tinylib/msgp v1.3.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.62.0 // indirect
-	golang.org/x/crypto v0.38.0 // indirect
-	golang.org/x/sync v0.14.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	github.com/valyala/fasthttp v1.64.0 // indirect
+	golang.org/x/crypto v0.40.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/text v0.27.0 // indirect
 )
