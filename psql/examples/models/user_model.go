@@ -2,7 +2,7 @@ package models
 
 import (
 	"database/sql"
-	mb "github.com/gflydev/db"
+	mb "github.com/gflydev/db/v2"
 	"time"
 )
 

@@ -9,8 +9,8 @@ import (
 	"github.com/gflydev/core/log"
 	"github.com/gflydev/core/try"
 	"github.com/gflydev/core/utils"
-	mb "github.com/gflydev/db"
 	dbPSQL "github.com/gflydev/db/psql"
+	mb "github.com/gflydev/db/v2
 	"github.com/gflydev/session"
 	sessionMemory "github.com/gflydev/session/memory"
 	"github.com/gflydev/view/pongo"

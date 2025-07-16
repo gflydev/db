@@ -2,7 +2,7 @@ package models
 
 import (
 	"database/sql"
-	"github.com/gflydev/db"
+	"github.com/gflydev/db/v2"
 )
 
 // User model
