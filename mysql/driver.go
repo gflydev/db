@@ -3,7 +3,7 @@ package mysql
 import (
 	"fmt"
 	"github.com/gflydev/core/utils"
-	"github.com/gflydev/db/v2"
+	"github.com/gflydev/db"
 	qb "github.com/jivegroup/fluentsql"
 	"github.com/jmoiron/sqlx"
 
