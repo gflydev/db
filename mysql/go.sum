@@ -6,6 +6,7 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gflydev/core v1.17.2 h1:LWJZ2QdrI7KNePhgVq3DLNtqyJRAnpBrFxS7dHzwxpk=
 github.com/gflydev/core v1.17.2/go.mod h1:PXw2qZiDCTbu7ms87g0inJYrrHuoceDbL+4G2xomPNE=
+github.com/gflydev/db v1.10.0/go.mod h1:sMa9y2HcBFJNGFpi8eFEwHjsTFttnwltfWb9Idt6Vss=
 github.com/gflydev/db/v2 v2.0.1 h1:l/bfllTAsOq9bgS1XjdHzWmVux9KtpoJhbkyZlRl7tQ=
 github.com/gflydev/db/v2 v2.0.1/go.mod h1:a7lqgJBsMs5J6YGA/k++9+2B8elKUgujerINABLXhVc=
 github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
