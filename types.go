@@ -109,6 +109,24 @@ const (
 //	qb.ValueField("user_details.user_id")
 type ValueField qb.ValueField
 
+// Make sure ValueField implements the IValueField interface.
+var _ qb.IValueField = (*ValueField)(nil)
+
+// Value returns the string representation of the ValueField.
+// This is used to convert the ValueField type to a plain string
+// for use in SQL queries and string operations.
+//
+// Returns:
+//   - string: The string value of the ValueField
+//
+// Example:
+//
+//	field := ValueField("user.id")
+//	str := field.String() // Returns "user.id"
+func (v ValueField) Value() string {
+	return string(v)
+}
+
 // FieldNot represents a SQL field prefixed with a NOT operator for negating conditions.
 // This is an alias for fluentsql.FieldNot to maintain backward compatibility.
 //

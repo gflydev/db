@@ -5,7 +5,6 @@ import (
 	"github.com/gflydev/core/errors"
 	"github.com/gflydev/core/log"
 	"github.com/gflydev/core/try"
-	qb "github.com/jivegroup/fluentsql" // Query builder
 )
 
 // ====================================================================
@@ -195,7 +194,8 @@ func GetModel[T any](conditions ...Condition) (*T, error) {
 	// Try/catch block
 	try.Perform(func() {
 		for _, condition := range conditions {
-			builder.Where(condition.Field, condition.Opt, condition.Value)
+			conditionConvert := condition.ToQBCondition()
+			builder.Where(conditionConvert.Field, conditionConvert.Opt, conditionConvert.Value)
 		}
 
 		// Get first record then assign to `m` WHERE field = value
@@ -235,7 +235,7 @@ func GetModel[T any](conditions ...Condition) (*T, error) {
 //   - []T: A slice of records of type T.
 //   - int: The total number of records that match the conditions.
 //   - error: An error object if an error occurs during the retrieval process.
-func FindModels[T any](page, limit int, sortField string, sortDir qb.OrderByDir, conditions ...qb.Condition) ([]T, int, error) {
+func FindModels[T any](page, limit int, sortField string, sortDir OrderByDir, conditions ...Condition) ([]T, int, error) {
 	var builder = Instance()
 	var items []T
 	var total int
@@ -248,7 +248,8 @@ func FindModels[T any](page, limit int, sortField string, sortDir qb.OrderByDir,
 
 	try.Perform(func() {
 		for _, condition := range conditions {
-			builder.Where(condition.Field, condition.Opt, condition.Value)
+			conditionConvert := condition.ToQBCondition()
+			builder.Where(conditionConvert.Field, conditionConvert.Opt, conditionConvert.Value)
 		}
 
 		builder.OrderBy(sortField, sortDir)

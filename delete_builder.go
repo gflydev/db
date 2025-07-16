@@ -125,7 +125,7 @@ func (db *DBModel) Delete(model any) error {
 				Field: primaryKey, // Field name for the condition.
 				Opt:   Eq,         // Equality operator for the condition.
 				Value: primaryVal, // Value to match against.
-				AndOr: qb.And,     // Logical operator for chaining conditions.
+				AndOr: And,        // Logical operator for chaining conditions.
 			}
 
 			// Add the primary key condition to the query builder.

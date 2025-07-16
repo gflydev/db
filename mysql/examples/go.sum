@@ -20,6 +20,7 @@ github.com/gflydev/db v1.2.0 h1:gomCyto1c9vm+e++pO2YYQRk0WknWIUWkUyUvH/dVkg=
 github.com/gflydev/db v1.2.0/go.mod h1:wnphxiwK+KZAo1OMQK+yBN4pCWdfYLyyqXU5VTpd9so=
 github.com/gflydev/db v1.6.0 h1:ldpIM1vsBg+dZqt2V8u0EwBTaTtb/AldGIqKl2EDnyg=
 github.com/gflydev/db v1.6.0/go.mod h1:+O+SECuRdaBh5zVkR0L2PLNe1vOQz5hirJg/peDMfOw=
+github.com/gflydev/db v1.10.0/go.mod h1:sMa9y2HcBFJNGFpi8eFEwHjsTFttnwltfWb9Idt6Vss=
 github.com/gflydev/db/mysql v1.1.0 h1:GlOY7FmagezKRkVmL9TPyEj/BXiW6CTQe2XyImGsO1k=
 github.com/gflydev/db/mysql v1.1.0/go.mod h1:JFCbW158ilGjsGPDVnScJ35meIxx2lfRPNvdWSjBldg=
 github.com/gflydev/db/mysql v1.4.3 h1:NzjOu+jvGgRCp2spfVJuSfAYw9EcmCoLTHAYfp20bXM=

@@ -18,6 +18,7 @@ github.com/gflydev/core v1.15.5/go.mod h1:PXw2qZiDCTbu7ms87g0inJYrrHuoceDbL+4G2x
 github.com/gflydev/core v1.17.2/go.mod h1:PXw2qZiDCTbu7ms87g0inJYrrHuoceDbL+4G2xomPNE=
 github.com/gflydev/db v1.6.3 h1:4CEq67Wy7naXigVP/aZnKzCkMmVJEKLbuH9+0A6uwEg=
 github.com/gflydev/db v1.6.3/go.mod h1:CgR+e0WEwrluW0Spy9x1g3MG8DStCPHHEnjp6iuiIhg=
+github.com/gflydev/db v1.10.0/go.mod h1:sMa9y2HcBFJNGFpi8eFEwHjsTFttnwltfWb9Idt6Vss=
 github.com/gflydev/db/psql v1.4.5 h1:w1Lv0XY3ymAI9NHRa5bL0pPiXbgXagC3j8G5HzsWZ18=
 github.com/gflydev/db/psql v1.4.5/go.mod h1:qRh+t40FDuiHDy7Hyl2uza/MT9BkTH+l4rtVMy66AA8=
 github.com/gflydev/db/v2 v2.0.1/go.mod h1:a7lqgJBsMs5J6YGA/k++9+2B8elKUgujerINABLXhVc=

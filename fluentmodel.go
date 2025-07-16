@@ -701,12 +701,12 @@ func (db *DBModel) Model(model any) *DBModel {
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) Where(field any, opt qb.WhereOpt, value any) *DBModel {
+func (db *DBModel) Where(field any, opt WhereOpt, value any) *DBModel {
 	db.whereStatement.Append(qb.Condition{
 		Field: field,
 		Opt:   opt,
 		Value: value,
-		AndOr: qb.And,
+		AndOr: And,
 	})
 
 	return db
@@ -721,7 +721,7 @@ func (db *DBModel) Where(field any, opt qb.WhereOpt, value any) *DBModel {
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) WhereOr(field any, opt qb.WhereOpt, value any) *DBModel {
+func (db *DBModel) WhereOr(field any, opt WhereOpt, value any) *DBModel {
 	db.whereStatement.Append(qb.Condition{
 		Field: field,
 		Opt:   opt,
@@ -806,7 +806,7 @@ func (db *DBModel) Having(field any, opt WhereOpt, value any) *DBModel {
 		Field: field,
 		Opt:   opt,
 		Value: value,
-		AndOr: qb.And,
+		AndOr: And,
 	})
 
 	return db
