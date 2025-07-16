@@ -1,4 +1,4 @@
-module github.com/gflydev/db/v2
+module github.com/gflydev/db
 
 go 1.24.0
 
