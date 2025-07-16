@@ -8,7 +8,7 @@ require github.com/gflydev/view/pongo v1.0.3
 
 require github.com/gflydev/db/psql v1.4.5
 
-require github.com/gflydev/db/v2 v2.0.1
+require github.com/gflydev/db v1.10.0
 
 require (
 	github.com/brianvoe/gofakeit/v7 v7.2.1
