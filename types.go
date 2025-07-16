@@ -1,8 +1,6 @@
 package db
 
-import (
-	qb "github.com/jivegroup/fluentsql"
-)
+import qb "github.com/jivegroup/fluentsql"
 
 // ====================================================================
 //                         Join Type
@@ -91,3 +89,119 @@ const (
 	GrEqAll    = qb.GrEqAll    // Greater than or equal to all values in a subquery (>= ALL)
 	LeEqAll    = qb.LeEqAll    // Less than or equal to all values in a subquery (<= ALL)
 )
+
+// ====================================================================
+//                         Other Types
+// ====================================================================
+
+// ValueField represents a column/field in a SQL query as a string value.
+// This is an alias for fluentsql.ValueField to maintain backward compatibility.
+//
+// Usage:
+//   - Used to reference database columns in SQL queries
+//   - Provides type safety for field references
+//
+// Methods:
+//   - String(): Converts the ValueField to its string representation.
+//
+// Example:
+//
+//	qb.ValueField("user_details.user_id")
+type ValueField qb.ValueField
+
+// FieldNot represents a SQL field prefixed with a NOT operator for negating conditions.
+// This is an alias for fluentsql.FieldNot to maintain backward compatibility.
+//
+// Usage:
+//   - Used to create negated field conditions in SQL queries
+//   - Applies NOT operator to field expressions
+//
+// Methods:
+//   - String(): Returns the SQL string representation of the negated field.
+type FieldNot qb.FieldNot
+
+// FieldEmpty represents an empty SQL field, often used in conditions like EXISTS or NOT EXISTS.
+// This is an alias for fluentsql.FieldEmpty to maintain backward compatibility.
+//
+// Usage:
+//   - Used in subquery conditions where no specific field is referenced
+//   - Commonly used with EXISTS and NOT EXISTS operations
+//
+// Example:
+//
+//	WHERE NOT EXISTS (SELECT employee_id FROM dependents)
+type FieldEmpty qb.FieldEmpty
+
+// FieldYear represents a SQL year extraction operation for a given field.
+// This is an alias for fluentsql.FieldYear to maintain backward compatibility.
+//
+// Usage:
+//   - Extracts the year portion from date/datetime fields
+//   - Generates database-specific SQL syntax for year extraction
+//
+// Database-specific implementations:
+//   - MySQL: YEAR(hire_date) Between 1990 AND 1993
+//   - PostgreSQL: DATE_PART('year', hire_date) Between 1990 AND 1993
+//   - SQLite: strftime('%Y', hire_date)
+type FieldYear qb.FieldYear
+
+// Condition represents a single condition in a WHERE clause.
+// This is an alias for fluentsql.Condition to maintain backward compatibility.
+//
+// Usage:
+//   - Defines comparison operations between fields and values
+//   - Supports standard SQL operators (=, >, <, LIKE, etc.)
+//   - Can be combined to form complex conditions
+//
+// Example:
+//
+//	WHERE user_id = 1 AND status = 'active'
+//
+// Condition type struct
+type Condition struct {
+	// Field represents the name of the column to compare. It can be of type `string` or `FieldNot`.
+	Field any
+	// Opt specifies the condition operator such as =, <>, >, <, >=, <=, LIKE, IN, NOT IN, BETWEEN, etc.
+	Opt WhereOpt
+	// Value holds the value to be compared against the field. Support ValueField for checking with table's column
+	Value any
+	// AndOr specifies the logical combination with the previous condition (AND, OR). Default is AND.
+	AndOr WhereAndOr
+	// Group contains sub-conditions enclosed in parentheses `()`.
+	Group []Condition
+}
+
+// ToQBCondition converts a Condition to qb.Condition.
+// This helper function recursively converts the local Condition struct
+// to the fluentsql qb.Condition struct, including any nested Group conditions.
+//
+// Returns:
+//   - qb.Condition: The converted condition ready for use with fluentsql
+//
+// Example:
+//
+//	condition := Condition{
+//		Field: "user_id",
+//		Opt:   Eq,
+//		Value: 123,
+//		AndOr: And,
+//	}
+//	qbCondition := condition.ToQBCondition()
+func (c Condition) ToQBCondition() qb.Condition {
+	// Convert nested Group conditions recursively
+	var qbGroup []qb.Condition
+	if len(c.Group) > 0 {
+		qbGroup = make([]qb.Condition, len(c.Group))
+		for i, groupCondition := range c.Group {
+			qbGroup[i] = groupCondition.ToQBCondition()
+		}
+	}
+
+	return qb.Condition{
+		Field: c.Field,
+		Opt:   c.Opt,
+		Value: c.Value,
+		AndOr: c.AndOr,
+		Group: qbGroup,
+	}
+}

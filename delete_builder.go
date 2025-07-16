@@ -123,7 +123,7 @@ func (db *DBModel) Delete(model any) error {
 		if primaryVal != nil {
 			wherePrimaryCondition := qb.Condition{
 				Field: primaryKey, // Field name for the condition.
-				Opt:   qb.Eq,      // Equality operator for the condition.
+				Opt:   Eq,         // Equality operator for the condition.
 				Value: primaryVal, // Value to match against.
 				AndOr: qb.And,     // Logical operator for chaining conditions.
 			}
@@ -144,11 +144,11 @@ func (db *DBModel) Delete(model any) error {
 				return &whereBuilder
 			})
 			hasCondition = true
-		case condition.AndOr == qb.And:
+		case condition.AndOr == And:
 			// Add the AND condition to the query builder.
 			deleteBuilder.Where(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true
-		case condition.AndOr == qb.Or:
+		case condition.AndOr == Or:
 			// Add the OR condition to the query builder.
 			deleteBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true

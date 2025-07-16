@@ -107,11 +107,11 @@ func (db *DBModel) updateByStruct(model any) (err error) {
 				return &whereBuilder
 			})
 			hasCondition = true
-		case condition.AndOr == qb.And:
+		case condition.AndOr == And:
 			// Add an AND clause to the WHERE condition.
 			updateBuilder.Where(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true
-		case condition.AndOr == qb.Or:
+		case condition.AndOr == Or:
 			// Add an OR clause to the WHERE condition.
 			updateBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 			hasCondition = true
@@ -125,7 +125,7 @@ func (db *DBModel) updateByStruct(model any) (err error) {
 				// Use primary key column value for the WHERE condition.
 				value := table.Values[column.Name]
 
-				updateBuilder.Where(column.Name, qb.Eq, value)
+				updateBuilder.Where(column.Name, Eq, value)
 				hasCondition = true
 			}
 		}

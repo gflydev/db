@@ -5,6 +5,13 @@ import (
 	"database/sql/driver"
 )
 
+// floatType is a constraint interface that allows either float64 or *float64 types.
+// It is used in generic functions to handle both direct float64 values and pointers
+// to float64 values in a type-safe manner.
+type floatType interface {
+	float64 | *float64
+}
+
 // Float64Any converts a sql.NullFloat64 to a driver.Value for database operations.
 // This function is typically used when you need to pass a nullable float64 value
 // to database driver operations.
@@ -53,15 +60,14 @@ func FloatNil(nullFloat sql.NullFloat64) *float64 {
 	return &nullFloat.Float64
 }
 
-// Float64 creates a sql.NullFloat64 from various input types.
-// This function provides a convenient way to create nullable float64 values
-// for database operations, handling both direct values and pointers.
+// Float64 creates a sql.NullFloat64 from type-constrained input types.
+// This function provides a type-safe way to create nullable float64 values
+// for database operations, handling both direct values and pointers with compile-time type checking.
 //
 // Parameters:
-//   - val (any): The input value to convert. Supported types:
+//   - val (T): The input value to convert. Supported types:
 //   - float64: Creates a valid NullFloat64 with the given float64 value
 //   - *float64: Creates a valid NullFloat64 from pointer (nil pointer creates invalid NullFloat64)
-//   - any other type: Creates an invalid NullFloat64 with zero value
 //
 // Returns:
 //   - sql.NullFloat64: A NullFloat64 struct with appropriate Valid flag and Float64 value.
@@ -77,11 +83,8 @@ func FloatNil(nullFloat sql.NullFloat64) *float64 {
 //
 //	// From nil pointer
 //	nullFloat := Float64((*float64)(nil)) // Returns: {Float64: 0, Valid: false}
-//
-//	// From unsupported type
-//	nullFloat := Float64("invalid") // Returns: {Float64: 0, Valid: false}
-func Float64(val any) sql.NullFloat64 {
-	switch v := val.(type) {
+func Float64[T floatType](val T) sql.NullFloat64 {
+	switch v := any(val).(type) {
 	case float64:
 		return sql.NullFloat64{
 			Float64: v,

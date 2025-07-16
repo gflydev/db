@@ -1,9 +1,19 @@
+// Package null provides utilities for handling nullable values in database operations.
+// It includes helper functions for converting between sql.NullBool and other boolean
+// representations, making it easier to work with nullable boolean values in Go applications.
 package null
 
 import (
 	"database/sql"
 	"database/sql/driver"
 )
+
+// boolType is a constraint interface that allows either bool or *bool types.
+// It is used in generic functions to handle both direct boolean values and pointers
+// to boolean values in a type-safe manner.
+type boolType interface {
+	bool | *bool
+}
 
 // BoolAny converts a sql.NullBool to a driver.Value for database operations.
 // This function is typically used when you need to pass a nullable boolean value
@@ -53,15 +63,14 @@ func BoolNil(nullBool sql.NullBool) *bool {
 	return &nullBool.Bool
 }
 
-// Bool creates a sql.NullBool from various input types.
-// This function provides a convenient way to create nullable boolean values
-// for database operations, handling both direct values and pointers.
+// Bool creates a sql.NullBool from type-constrained input types.
+// This function provides a type-safe way to create nullable boolean values
+// for database operations, handling both direct values and pointers with compile-time type checking.
 //
 // Parameters:
-//   - val (any): The input value to convert. Supported types:
+//   - val (T): The input value to convert. Supported types:
 //   - bool: Creates a valid NullBool with the given boolean value
 //   - *bool: Creates a valid NullBool from pointer (nil pointer creates invalid NullBool)
-//   - any other type: Creates an invalid NullBool with false value
 //
 // Returns:
 //   - sql.NullBool: A NullBool struct with appropriate Valid flag and Bool value.
@@ -69,19 +78,16 @@ func BoolNil(nullBool sql.NullBool) *bool {
 // Examples:
 //
 //	// From bool value
-//	nullBool := Bool(true) // Returns: {Bool: true, Valid: true}
+//	nullBool := BoolGeneric(true) // Returns: {Bool: true, Valid: true}
 //
 //	// From bool pointer
 //	boolPtr := &true
-//	nullBool := Bool(boolPtr) // Returns: {Bool: true, Valid: true}
+//	nullBool := BoolGeneric(boolPtr) // Returns: {Bool: true, Valid: true}
 //
 //	// From nil pointer
-//	nullBool := Bool((*bool)(nil)) // Returns: {Bool: false, Valid: false}
-//
-//	// From unsupported type
-//	nullBool := Bool("invalid") // Returns: {Bool: false, Valid: false}
-func Bool(val any) sql.NullBool {
-	switch v := val.(type) {
+//	nullBool := BoolGeneric((*bool)(nil)) // Returns: {Bool: false, Valid: false}
+func Bool[T boolType](val T) sql.NullBool {
+	switch v := any(val).(type) {
 	case bool:
 		return sql.NullBool{
 			Bool:  v,

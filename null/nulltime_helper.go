@@ -6,6 +6,13 @@ import (
 	"time"
 )
 
+// timeType is a constraint interface that allows either time.Time or *time.Time types.
+// It is used in generic functions to handle both direct time.Time values and pointers
+// to time.Time values in a type-safe manner.
+type timeType interface {
+	time.Time | *time.Time
+}
+
 // TimeAny converts a sql.NullTime to a driver.Value for database operations.
 // This function is typically used when you need to pass a nullable time.Time value
 // to database driver operations.
@@ -56,15 +63,14 @@ func TimeNil(nullTime sql.NullTime) *time.Time {
 	return &nullTime.Time
 }
 
-// Time creates a sql.NullTime from various input types.
-// This function provides a convenient way to create nullable time.Time values
-// for database operations, handling both direct values and pointers.
+// Time creates a sql.NullTime from type-constrained input types.
+// This function provides a type-safe way to create nullable time.Time values
+// for database operations, handling both direct values and pointers with compile-time type checking.
 //
 // Parameters:
-//   - val (any): The input value to convert. Supported types:
+//   - val (T): The input value to convert. Supported types:
 //   - time.Time: Creates a valid NullTime with the given time.Time value
 //   - *time.Time: Creates a valid NullTime from pointer (nil pointer creates invalid NullTime)
-//   - any other type: Creates an invalid NullTime with zero time value
 //
 // Returns:
 //   - sql.NullTime: A NullTime struct with appropriate Valid flag and Time value.
@@ -81,11 +87,8 @@ func TimeNil(nullTime sql.NullTime) *time.Time {
 //
 //	// From nil pointer
 //	nullTime := Time((*time.Time)(nil)) // Returns: {Time: time.Time{}, Valid: false}
-//
-//	// From unsupported type
-//	nullTime := Time("invalid") // Returns: {Time: time.Time{}, Valid: false}
-func Time(val any) sql.NullTime {
-	switch v := val.(type) {
+func Time[T timeType](val T) sql.NullTime {
+	switch v := any(val).(type) {
 	case time.Time:
 		return sql.NullTime{
 			Time:  v,
@@ -111,7 +114,7 @@ func Time(val any) sql.NullTime {
 	}
 }
 
-// NowTime creates a sql.NullTime with the current time.
+// TimeNow creates a sql.NullTime with the current time.
 // This is a convenience function that creates a valid NullTime using the current
 // system time, equivalent to calling Time(time.Now()).
 //
@@ -120,10 +123,10 @@ func Time(val any) sql.NullTime {
 //
 // Example:
 //
-//	nullTime := NowTime() // Returns: {Time: <current time>, Valid: true}
+//	nullTime := TimeNow() // Returns: {Time: <current time>, Valid: true}
 //
 //	// Equivalent to:
 //	nullTime := Time(time.Now())
-func NowTime() sql.NullTime {
+func TimeNow() sql.NullTime {
 	return Time(time.Now())
 }

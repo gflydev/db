@@ -5,6 +5,27 @@ import (
 	"database/sql/driver"
 )
 
+// int64Type is a constraint interface that allows either int64 or *int64 types.
+// It is used in generic functions to handle both direct int64 values and pointers
+// to int64 values in a type-safe manner.
+type int64Type interface {
+	int64 | *int64
+}
+
+// int32Type is a constraint interface that allows either int32 or *int32 types.
+// It is used in generic functions to handle both direct int32 values and pointers
+// to int32 values in a type-safe manner.
+type int32Type interface {
+	int32 | *int32
+}
+
+// int16Type is a constraint interface that allows either int16 or *int16 types.
+// It is used in generic functions to handle both direct int16 values and pointers
+// to int16 values in a type-safe manner.
+type int16Type interface {
+	int16 | *int16
+}
+
 // Int64Any converts a sql.NullInt64 to a driver.Value for database operations.
 // This function is typically used when you need to pass a nullable int64 value
 // to database driver operations.
@@ -53,15 +74,14 @@ func Int64Nil(nullInt sql.NullInt64) *int64 {
 	return &nullInt.Int64
 }
 
-// Int64 creates a sql.NullInt64 from various input types.
-// This function provides a convenient way to create nullable int64 values
-// for database operations, handling both direct values and pointers.
+// Int64 creates a sql.NullInt64 from type-constrained input types.
+// This function provides a type-safe way to create nullable int64 values
+// for database operations, handling both direct values and pointers with compile-time type checking.
 //
 // Parameters:
-//   - val (any): The input value to convert. Supported types:
+//   - val (T): The input value to convert. Supported types:
 //   - int64: Creates a valid NullInt64 with the given int64 value
 //   - *int64: Creates a valid NullInt64 from pointer (nil pointer creates invalid NullInt64)
-//   - any other type: Creates an invalid NullInt64 with zero value
 //
 // Returns:
 //   - sql.NullInt64: A NullInt64 struct with appropriate Valid flag and Int64 value.
@@ -77,11 +97,8 @@ func Int64Nil(nullInt sql.NullInt64) *int64 {
 //
 //	// From nil pointer
 //	nullInt := Int64((*int64)(nil)) // Returns: {Int64: 0, Valid: false}
-//
-//	// From unsupported type
-//	nullInt := Int64("invalid") // Returns: {Int64: 0, Valid: false}
-func Int64(val any) sql.NullInt64 {
-	switch v := val.(type) {
+func Int64[T int64Type](val T) sql.NullInt64 {
+	switch v := any(val).(type) {
 	case int64:
 		return sql.NullInt64{
 			Int64: v,
@@ -155,15 +172,14 @@ func Int32Nil(nullInt sql.NullInt32) *int32 {
 	return &nullInt.Int32
 }
 
-// Int32 creates a sql.NullInt32 from various input types.
-// This function provides a convenient way to create nullable int32 values
-// for database operations, handling both direct values and pointers.
+// Int32 creates a sql.NullInt32 from type-constrained input types.
+// This function provides a type-safe way to create nullable int32 values
+// for database operations, handling both direct values and pointers with compile-time type checking.
 //
 // Parameters:
-//   - val (any): The input value to convert. Supported types:
+//   - val (T): The input value to convert. Supported types:
 //   - int32: Creates a valid NullInt32 with the given int32 value
 //   - *int32: Creates a valid NullInt32 from pointer (nil pointer creates invalid NullInt32)
-//   - any other type: Creates an invalid NullInt32 with zero value
 //
 // Returns:
 //   - sql.NullInt32: A NullInt32 struct with appropriate Valid flag and Int32 value.
@@ -179,11 +195,8 @@ func Int32Nil(nullInt sql.NullInt32) *int32 {
 //
 //	// From nil pointer
 //	nullInt := Int32((*int32)(nil)) // Returns: {Int32: 0, Valid: false}
-//
-//	// From unsupported type
-//	nullInt := Int32("invalid") // Returns: {Int32: 0, Valid: false}
-func Int32(val any) sql.NullInt32 {
-	switch v := val.(type) {
+func Int32[T int32Type](val T) sql.NullInt32 {
+	switch v := any(val).(type) {
 	case int32:
 		return sql.NullInt32{
 			Int32: v,
@@ -257,15 +270,14 @@ func Int16Nil(nullInt sql.NullInt16) *int16 {
 	return &nullInt.Int16
 }
 
-// Int16 creates a sql.NullInt16 from various input types.
-// This function provides a convenient way to create nullable int16 values
-// for database operations, handling both direct values and pointers.
+// Int16 creates a sql.NullInt16 from type-constrained input types.
+// This function provides a type-safe way to create nullable int16 values
+// for database operations, handling both direct values and pointers with compile-time type checking.
 //
 // Parameters:
-//   - val (any): The input value to convert. Supported types:
+//   - val (T): The input value to convert. Supported types:
 //   - int16: Creates a valid NullInt16 with the given int16 value
 //   - *int16: Creates a valid NullInt16 from pointer (nil pointer creates invalid NullInt16)
-//   - any other type: Creates an invalid NullInt16 with zero value
 //
 // Returns:
 //   - sql.NullInt16: A NullInt16 struct with appropriate Valid flag and Int16 value.
@@ -281,11 +293,8 @@ func Int16Nil(nullInt sql.NullInt16) *int16 {
 //
 //	// From nil pointer
 //	nullInt := Int16((*int16)(nil)) // Returns: {Int16: 0, Valid: false}
-//
-//	// From unsupported type
-//	nullInt := Int16("invalid") // Returns: {Int16: 0, Valid: false}
-func Int16(val any) sql.NullInt16 {
-	switch v := val.(type) {
+func Int16[T int16Type](val T) sql.NullInt16 {
+	switch v := any(val).(type) {
 	case int16:
 		return sql.NullInt16{
 			Int16: v,

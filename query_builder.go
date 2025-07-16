@@ -135,9 +135,9 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 				whereBuilder.WhereCondition(condition.Group...)
 				return &whereBuilder
 			})
-		case condition.AndOr == qb.And:
+		case condition.AndOr == And:
 			queryBuilder.Where(condition.Field, condition.Opt, condition.Value)
-		case condition.AndOr == qb.Or:
+		case condition.AndOr == Or:
 			queryBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 		}
 	}
@@ -183,18 +183,18 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 	// Determine order by direction based on the strategy
 	switch {
 	case getType == GetLast && orderByField != "":
-		orderByDir = qb.Desc
+		orderByDir = Desc
 	case getType == GetFirst && orderByField != "":
-		orderByDir = qb.Asc
+		orderByDir = Asc
 	case getType == TakeOne: // Random order by field and direction
 		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(table.Columns)-1)))
 		orderByField = table.Columns[n.Int64()].Name
 
 		n, _ = rand.Int(rand.Reader, big.NewInt(10))
 		if n.Int64()%2 == 1 {
-			orderByDir = qb.Asc
+			orderByDir = Asc
 		} else {
-			orderByDir = qb.Desc
+			orderByDir = Desc
 		}
 	}
 	queryBuilder.OrderBy(orderByField, orderByDir)
@@ -285,10 +285,10 @@ func (db *DBModel) Find(model any) (total int, err error) {
 				whereBuilder.WhereCondition(condition.Group...)
 				return &whereBuilder
 			})
-		case condition.AndOr == qb.And:
+		case condition.AndOr == And:
 			// Add Where AND condition
 			queryBuilder.Where(condition.Field, condition.Opt, condition.Value)
-		case condition.AndOr == qb.Or:
+		case condition.AndOr == Or:
 			// Add Where OR condition
 			queryBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
 		}

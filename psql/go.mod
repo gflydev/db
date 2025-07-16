@@ -6,7 +6,7 @@ require github.com/jmoiron/sqlx v1.4.0
 
 require (
 	github.com/gflydev/core v1.17.2
-	github.com/gflydev/db v1.7.0
+	github.com/gflydev/db v1.9.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/jivegroup/fluentsql v1.5.3
 )

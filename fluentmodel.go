@@ -631,10 +631,10 @@ func (db *DBModel) Omit(columns ...any) *DBModel {
 //
 //	// Update operations
 //	user.Age = 31
-//	err := db.Where("id", qb.Eq, user.ID).Update(&user)
+//	err := db.Where("id", Eq, user.ID).Update(&user)
 //
 //	// Delete operations
-//	err := db.Where("id", qb.Eq, user.ID).Delete(&user)
+//	err := db.Where("id", Eq, user.ID).Delete(&user)
 //
 //	// Complex model with relationships
 //	type Order struct {
@@ -662,7 +662,7 @@ func (db *DBModel) Omit(columns ...any) *DBModel {
 //	// Each instance maintains separate model context
 //
 //	// Model reuse with different instances
-//	db1 := Instance().Model(&User{}).Where("status", qb.Eq, "active")
+//	db1 := Instance().Model(&User{}).Where("status", Eq, "active")
 //	db2 := Instance().Model(&User{}).Where("age", qb.Gt, 18)
 //	// Independent query contexts with same model
 //
@@ -782,11 +782,11 @@ func (db *DBModel) When(condition bool, groupCondition qb.FnWhereBuilder) *DBMod
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) Join(join qb.JoinType, table string, condition qb.Condition) *DBModel {
+func (db *DBModel) Join(join qb.JoinType, table string, condition Condition) *DBModel {
 	db.joinStatement.Append(qb.JoinItem{
 		Join:      join,
 		Table:     table,
-		Condition: condition,
+		Condition: condition.ToQBCondition(),
 	})
 
 	return db
@@ -801,7 +801,7 @@ func (db *DBModel) Join(join qb.JoinType, table string, condition qb.Condition) 
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) Having(field any, opt qb.WhereOpt, value any) *DBModel {
+func (db *DBModel) Having(field any, opt WhereOpt, value any) *DBModel {
 	db.havingStatement.Append(qb.Condition{
 		Field: field,
 		Opt:   opt,
@@ -914,7 +914,7 @@ func (tbl *Table) whereFromModel(queryBuilder *qb.QueryBuilder) {
 			}
 
 			// Append query conditions
-			queryBuilder.Where(column.Name, qb.Eq, tbl.Values[column.Name])
+			queryBuilder.Where(column.Name, Eq, tbl.Values[column.Name])
 		}
 	}
 }

@@ -5,6 +5,13 @@ import (
 	"database/sql/driver"
 )
 
+// byteType is a constraint interface that allows either byte or *byte types.
+// It is used in generic functions to handle both direct byte values and pointers
+// to byte values in a type-safe manner.
+type byteType interface {
+	byte | *byte
+}
+
 // ByteAny converts a sql.NullByte to a driver.Value for database operations.
 // This function is typically used when you need to pass a nullable byte value
 // to database driver operations.
@@ -53,15 +60,14 @@ func ByteNil(nullByte sql.NullByte) *byte {
 	return &nullByte.Byte
 }
 
-// Byte creates a sql.NullByte from various input types.
-// This function provides a convenient way to create nullable byte values
-// for database operations, handling both direct values and pointers.
+// Byte creates a sql.NullByte from type-constrained input types.
+// This function provides a type-safe way to create nullable byte values
+// for database operations, handling both direct values and pointers with compile-time type checking.
 //
 // Parameters:
-//   - val (any): The input value to convert. Supported types:
+//   - val (T): The input value to convert. Supported types:
 //   - byte: Creates a valid NullByte with the given byte value
 //   - *byte: Creates a valid NullByte from pointer (nil pointer creates invalid NullByte)
-//   - any other type: Creates an invalid NullByte with zero value
 //
 // Returns:
 //   - sql.NullByte: A NullByte struct with appropriate Valid flag and Byte value.
@@ -69,19 +75,16 @@ func ByteNil(nullByte sql.NullByte) *byte {
 // Examples:
 //
 //	// From byte value
-//	nullByte := Byte(byte(65)) // Returns: {Byte: 65, Valid: true}
+//	nullByte := ByteGeneric(byte(65)) // Returns: {Byte: 65, Valid: true}
 //
 //	// From byte pointer
 //	bytePtr := byte(97)
-//	nullByte := Byte(&bytePtr) // Returns: {Byte: 97, Valid: true}
+//	nullByte := ByteGeneric(&bytePtr) // Returns: {Byte: 97, Valid: true}
 //
 //	// From nil pointer
-//	nullByte := Byte((*byte)(nil)) // Returns: {Byte: 0, Valid: false}
-//
-//	// From unsupported type
-//	nullByte := Byte("invalid") // Returns: {Byte: 0, Valid: false}
-func Byte(val any) sql.NullByte {
-	switch v := val.(type) {
+//	nullByte := ByteGeneric((*byte)(nil)) // Returns: {Byte: 0, Valid: false}
+func Byte[T byteType](val T) sql.NullByte {
+	switch v := any(val).(type) {
 	case byte:
 		return sql.NullByte{
 			Byte:  v,

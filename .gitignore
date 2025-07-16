@@ -38,4 +38,5 @@ Dev/
 *.local
 .cache
 *.dev
+coverage.txt
 Prompt.md

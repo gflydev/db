@@ -229,7 +229,7 @@ log.Printf("User %v\n", user5)
 **Get first by Where condition**
 ```go
 var user6 User
-err = db.Where("Id", qb.Eq, 100).
+err = db.Where("Id", Eq, 100).
 	First(&user6)
 if err != nil {
     log.Fatal(err)
@@ -240,10 +240,10 @@ log.Printf("User %v\n", user6)
 **Get first by WhereGroup**
 ```go
 var user7 User
-err = db.Where("Id", qb.Eq, 100).
+err = db.Where("Id", Eq, 100).
     WhereGroup(func(query qb.WhereBuilder) *qb.WhereBuilder {
-        query.Where("age", qb.Eq, 42).
-            WhereOr("age", qb.Eq, 39)
+        query.Where("age", Eq, 42).
+            WhereOr("age", Eq, 39)
 
         return &query
     }).First(&user7)
@@ -295,7 +295,7 @@ var users3 []UserTotal
 _, err = db.Model(&UserTotal{}).
     Select("name, sum(age) as total_age").
     GroupBy("name").
-    Having("name", qb.Eq, "vinh").
+    Having("name", Eq, "vinh").
     Find(&users3)
 if err != nil {
     log.Fatal(err)
@@ -312,10 +312,10 @@ _, err = db.Model(&UserJoin{}).
     Select("name, age, email, phone").
     Join(qb.InnerJoin, "user_details", qb.Condition{
         Field: "users.id",
-        Opt:   qb.Eq,
+        Opt:   Eq,
         Value: qb.ValueField("user_details.user_id"),
     }).
-    Where("users.name", qb.Eq, "Kite").
+    Where("users.name", Eq, "Kite").
     Find(&users4)
 if err != nil {
     log.Fatal(err)
@@ -469,7 +469,7 @@ user1.Name = sql.NullString{
 user1.Age = 100
 
 err = db.
-    Where("id", qb.Eq, 1).
+    Where("id", Eq, 1).
     Update(user1)
 
 if err != nil {
@@ -522,7 +522,7 @@ if err != nil {
 
 **Delete by Where condition**
 ```go
-err = db.Where("Id", qb.Eq, 153).
+err = db.Where("Id", Eq, 153).
 	Delete(&User{})
 if err != nil {
     log.Fatal(err)

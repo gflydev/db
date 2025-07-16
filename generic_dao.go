@@ -166,9 +166,9 @@ func GetModelBy[T any](field string, value any) (*T, error) {
 //   - *T: A pointer to the retrieved model of type T, or nil if no matching record is found.
 //   - error: An error object if an error occurs during the retrieval process.
 func GetModelWhereEq[T any](field string, value any) (*T, error) {
-	return GetModel[T](qb.Condition{
+	return GetModel[T](Condition{
 		Field: field,
-		Opt:   qb.Eq,
+		Opt:   Eq,
 		Value: value,
 	})
 }
@@ -187,7 +187,7 @@ func GetModelWhereEq[T any](field string, value any) (*T, error) {
 //   - *T: A pointer to the retrieved model of type T, or nil if no matching record is found.
 //   - error: An error object if an error occurs during the retrieval process.
 //     Returns nil if the query succeeds. Logs unexpected errors.
-func GetModel[T any](conditions ...qb.Condition) (*T, error) {
+func GetModel[T any](conditions ...Condition) (*T, error) {
 	var builder = Instance()
 	var err error
 	var m T

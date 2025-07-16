@@ -5,6 +5,13 @@ import (
 	"database/sql/driver"
 )
 
+// stringType is a constraint interface that allows either string or *string types.
+// It is used in generic functions to handle both direct string values and pointers
+// to string values in a type-safe manner.
+type stringType interface {
+	string | *string
+}
+
 // StringAny converts a sql.NullString to a driver.Value for database operations.
 // This function is typically used when you need to pass a nullable string value
 // to database driver operations.
@@ -53,15 +60,14 @@ func StringNil(nullString sql.NullString) *string {
 	return &nullString.String
 }
 
-// String creates a sql.NullString from various input types.
-// This function provides a convenient way to create nullable string values
-// for database operations, handling both direct values and pointers.
+// String creates a sql.NullString from type-constrained input types.
+// This function provides a type-safe way to create nullable string values
+// for database operations, handling both direct values and pointers with compile-time type checking.
 //
 // Parameters:
-//   - val (any): The input value to convert. Supported types:
+//   - val (T): The input value to convert. Supported types:
 //   - string: Creates a valid NullString with the given string value
 //   - *string: Creates a valid NullString from pointer (nil pointer creates invalid NullString)
-//   - any other type: Creates an invalid NullString with empty string value
 //
 // Returns:
 //   - sql.NullString: A NullString struct with appropriate Valid flag and String value.
@@ -77,11 +83,8 @@ func StringNil(nullString sql.NullString) *string {
 //
 //	// From nil pointer
 //	nullString := String((*string)(nil)) // Returns: {String: "", Valid: false}
-//
-//	// From unsupported type
-//	nullString := String(123) // Returns: {String: "", Valid: false}
-func String(val any) sql.NullString {
-	switch v := val.(type) {
+func String[T stringType](val T) sql.NullString {
+	switch v := any(val).(type) {
 	case string:
 		return sql.NullString{
 			String: v,
