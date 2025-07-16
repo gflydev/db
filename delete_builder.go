@@ -5,13 +5,91 @@ import (
 	qb "github.com/jivegroup/fluentsql"
 )
 
-// Delete performs the deletion of data for a given table using a model of type Struct or *Struct.
+// Delete removes records from the database table based on the provided model and conditions.
+// This method provides a flexible approach to data deletion by supporting both primary key-based
+// deletion and conditional deletion using WHERE clauses. It automatically constructs DELETE SQL
+// statements based on the model's primary keys and any additional conditions specified through
+// the fluent interface. The method ensures safe deletion by requiring at least one WHERE condition
+// to prevent accidental deletion of all table data.
 //
 // Parameters:
-//   - model (any): The input model defining the data to delete. This can be a struct or a pointer to a struct.
+//   - model (any): The model defining the target table and deletion criteria. Supported types:
+//   - Struct: Direct struct value representing the table model (e.g., User{ID: 1})
+//   - *Struct: Pointer to struct representing the table model (e.g., &User{ID: 1})
+//   - The struct should have appropriate field tags for database mapping
+//   - Primary key fields in the model are used to build WHERE conditions automatically
+//   - Non-nil primary key values are included in the deletion criteria
 //
 // Returns:
-//   - error: Returns an error if the deletion process fails.
+//   - error: Returns an error if:
+//   - The model cannot be processed or reflected (invalid struct type)
+//   - Table metadata extraction fails
+//   - No WHERE conditions are present (safety requirement)
+//   - Raw SQL execution fails (when using Raw() method)
+//   - DELETE statement construction fails
+//   - Database execution fails
+//   - Database connectivity issues occur
+//     Returns nil on successful deletion.
+//
+// Examples:
+//
+//	// Delete by primary key
+//	user := User{ID: 123}
+//	err := db.Model(&User{}).Delete(user)
+//	// Executes: DELETE FROM users WHERE id = 123
+//
+//	// Delete with pointer to struct
+//	user := &User{ID: 456}
+//	err := db.Model(&User{}).Delete(user)
+//	// Executes: DELETE FROM users WHERE id = 456
+//
+//	// Delete with additional WHERE conditions
+//	user := User{}
+//	err := db.Model(&User{}).Where("status", "inactive").Delete(user)
+//	// Executes: DELETE FROM users WHERE status = 'inactive'
+//
+//	// Delete with multiple conditions
+//	user := User{ID: 789}
+//	err := db.Model(&User{}).Where("created_at < ?", time.Now().AddDate(-1, 0, 0)).Delete(user)
+//	// Executes: DELETE FROM users WHERE id = 789 AND created_at < '2023-01-01'
+//
+//	// Delete with OR conditions
+//	user := User{}
+//	err := db.Model(&User{}).Where("status", "inactive").Or("last_login < ?", oldDate).Delete(user)
+//	// Executes: DELETE FROM users WHERE status = 'inactive' OR last_login < '2023-01-01'
+//
+//	// Delete with grouped conditions
+//	user := User{}
+//	err := db.Model(&User{}).Where("status", "inactive").
+//	    Where(func(db *DBModel) *DBModel {
+//	        return db.Where("role", "guest").Or("role", "temp")
+//	    }).Delete(user)
+//	// Executes: DELETE FROM users WHERE status = 'inactive' AND (role = 'guest' OR role = 'temp')
+//
+//	// Raw SQL deletion
+//	user := User{}
+//	err := db.Model(&User{}).Raw("DELETE FROM users WHERE created_at < NOW() - INTERVAL 1 YEAR").Delete(user)
+//	// Executes the raw SQL directly
+//
+//	// Composite primary key deletion
+//	orderItem := OrderItem{OrderID: 100, ProductID: 200}
+//	err := db.Model(&OrderItem{}).Delete(orderItem)
+//	// Executes: DELETE FROM order_items WHERE order_id = 100 AND product_id = 200
+//
+// Safety Features:
+//   - Requires at least one WHERE condition to prevent accidental mass deletion
+//   - Automatically includes non-nil primary key values as WHERE conditions
+//   - Validates model structure before executing deletion
+//   - Supports transaction rollback through proper error handling
+//
+// Note:
+//   - Primary key fields with nil/zero values are ignored in WHERE conditions
+//   - The method respects all WHERE conditions set via the fluent interface
+//   - Raw SQL takes precedence over model-based deletion when both are present
+//   - The fluent model builder is automatically reset after the operation
+//   - For mass deletion, use Raw() method with appropriate WHERE clauses
+//   - Composite primary keys are fully supported with AND logic
+//   - The operation is atomic and will either succeed completely or fail without changes
 func (db *DBModel) Delete(model any) error {
 	var err error // Stores errors encountered during the function execution.
 

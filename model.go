@@ -30,14 +30,95 @@ const (
 // MetaData represents metadata string information
 type MetaData string
 
-// Table structure that maps a Go struct to a database table
+// Table represents the complete metadata and structure of a database table derived from a Go struct.
+// This struct serves as the bridge between Go struct definitions and database table operations,
+// containing all necessary information for ORM functionality including column definitions,
+// primary keys, relationships, and current data values. It's created through reflection
+// analysis of struct types and their database tags.
+//
+// Fields:
+//   - Name (string): The database table name, typically derived from the struct name
+//     converted to snake_case format. Can be overridden with struct tags.
+//   - Columns ([]Column): Complete list of all table columns derived from struct fields.
+//     Each column contains metadata about the corresponding database column including
+//     name, type, constraints, and current values.
+//   - Primaries ([]Column): Subset of columns that are designated as primary keys.
+//     Used for WHERE clause construction in UPDATE and DELETE operations.
+//     Supports both single and composite primary keys.
+//   - Values (map[string]any): Current field values indexed by column name.
+//     Contains the actual data values from the struct instance, used for
+//     INSERT, UPDATE operations and WHERE clause value binding.
+//   - Relation ([]*Table): Related table structures for handling foreign key relationships.
+//     Used for JOIN operations and relational data mapping in complex queries.
+//     Currently supports basic relationship mapping.
+//   - HasData (bool): Indicates whether the table contains valid, non-zero data.
+//     Used to determine if the struct instance has meaningful values for database operations.
+//
+// Usage:
+//
+//	// Table is typically created through ModelData function
+//	type User struct {
+//	    ID    int64  `db:"id,primary"`
+//	    Name  string `db:"name"`
+//	    Email string `db:"email"`
+//	}
+//
+//	user := User{ID: 1, Name: "John", Email: "john@example.com"}
+//	table, err := ModelData(user)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	// Access table metadata
+//	fmt.Println("Table name:", table.Name)           // "users"
+//	fmt.Println("Column count:", len(table.Columns)) // 3
+//	fmt.Println("Primary keys:", len(table.Primaries)) // 1
+//	fmt.Println("Has data:", table.HasData)          // true
+//
+//	// Access column values
+//	fmt.Println("User ID:", table.Values["id"])      // 1
+//	fmt.Println("User name:", table.Values["name"])  // "John"
+//
+// Examples of generated table structures:
+//
+//	// Simple struct
+//	type Product struct {
+//	    ID    uint32  `db:"id,primary"`
+//	    Name  string  `db:"name"`
+//	    Price float64 `db:"price"`
+//	}
+//	// Results in table.Name = "products", 3 columns, 1 primary key
+//
+//	// Composite primary key
+//	type OrderItem struct {
+//	    OrderID   int64 `db:"order_id,primary"`
+//	    ProductID int64 `db:"product_id,primary"`
+//	    Quantity  int   `db:"quantity"`
+//	}
+//	// Results in table.Primaries containing 2 columns
+//
+//	// With relationships (basic support)
+//	type Order struct {
+//	    ID     int64 `db:"id,primary"`
+//	    UserID int64 `db:"user_id,ref=users.id"`
+//	    Total  float64 `db:"total"`
+//	}
+//	// Results in relationship metadata in table.Relation
+//
+// Note:
+//   - Table names are automatically converted to snake_case from struct names
+//   - Column metadata is extracted from struct field tags
+//   - Primary key detection is based on "primary" tag attribute
+//   - Values map contains current struct field values for database operations
+//   - The structure supports both simple and complex database schemas
+//   - Used internally by all ORM operations for metadata and value extraction
 type Table struct {
-	Name      string         // Name of the table
-	Columns   []Column       // List of columns in the table
-	Primaries []Column       // List of primary key columns
-	Values    map[string]any // Values of the table columns
-	Relation  []*Table       // Related tables for relational mapping
-	HasData   bool           // Indicates if the table has valid data
+	Name      string         // Database table name derived from struct name (snake_case)
+	Columns   []Column       // Complete column definitions with metadata and constraints
+	Primaries []Column       // Primary key columns for unique identification and operations
+	Values    map[string]any // Current column values indexed by column name for operations
+	Relation  []*Table       // Related table structures for foreign key and JOIN operations
+	HasData   bool           // Flag indicating presence of valid, non-zero data in the struct
 }
 
 // Column structure that maps a struct field to a database table column
