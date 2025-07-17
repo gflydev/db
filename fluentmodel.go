@@ -726,25 +726,32 @@ func (db *DBModel) WhereOr(field any, opt WhereOpt, value any) *DBModel {
 		Field: field,
 		Opt:   opt,
 		Value: value,
-		AndOr: qb.Or,
+		AndOr: Or,
 	})
 
 	return db
 }
 
-// WhereGroup combines multiple WHERE conditions into a group.
+// WhereGroup combines multiple WHERE conditions into a group using FnWhereBuilder.
 //
 // Parameters:
-//   - groupCondition (qb.FnWhereBuilder): The function to build grouped conditions.
+//   - groupCondition (FnWhereBuilder): The function to build grouped conditions using WhereBuilder.
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) WhereGroup(groupCondition qb.FnWhereBuilder) *DBModel {
-	// Create new WhereBuilder
-	whereBuilder := groupCondition(*qb.WhereInstance())
+func (db *DBModel) WhereGroup(groupCondition FnWhereBuilder) *DBModel {
+	// Create new WhereBuilder using local constructor
+	whereBuilder := groupCondition(*WhereInstance())
 
+	// Convert local conditions to qb.Condition types for the group
+	var qbConditions []qb.Condition
+	for _, localCondition := range whereBuilder.Conditions() {
+		qbConditions = append(qbConditions, localCondition.ToQBCondition())
+	}
+
+	// Create a qb.Condition with the group
 	cond := qb.Condition{
-		Group: whereBuilder.Conditions(),
+		Group: qbConditions,
 	}
 
 	db.whereStatement.Conditions = append(db.whereStatement.Conditions, cond)
@@ -756,19 +763,22 @@ func (db *DBModel) WhereGroup(groupCondition qb.FnWhereBuilder) *DBModel {
 //
 // Parameters:
 //   - condition (bool): Determines whether the condition should be applied.
-//   - groupCondition (qb.FnWhereBuilder): The function to build the condition.
+//   - groupCondition (FnWhereBuilder): The function to build the condition using WhereBuilder.
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) When(condition bool, groupCondition qb.FnWhereBuilder) *DBModel {
+func (db *DBModel) When(condition bool, groupCondition FnWhereBuilder) *DBModel {
 	if !condition {
 		return db
 	}
 
-	// Create new WhereBuilder
-	whereBuilder := groupCondition(*qb.WhereInstance())
+	// Create new WhereBuilder using local constructor
+	whereBuilder := groupCondition(*WhereInstance())
 
-	db.whereStatement.Conditions = append(db.whereStatement.Conditions, whereBuilder.Conditions()...)
+	// Convert local Condition types to qb.Condition types
+	for _, localCondition := range whereBuilder.Conditions() {
+		db.whereStatement.Conditions = append(db.whereStatement.Conditions, localCondition.ToQBCondition())
+	}
 
 	return db
 }
@@ -782,7 +792,7 @@ func (db *DBModel) When(condition bool, groupCondition qb.FnWhereBuilder) *DBMod
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) Join(join qb.JoinType, table string, condition Condition) *DBModel {
+func (db *DBModel) Join(join JoinType, table string, condition Condition) *DBModel {
 	db.joinStatement.Append(qb.JoinItem{
 		Join:      join,
 		Table:     table,
@@ -833,7 +843,7 @@ func (db *DBModel) GroupBy(fields ...string) *DBModel {
 //
 // Returns:
 //   - *DBModel: A reference to the DBModel instance for chaining.
-func (db *DBModel) OrderBy(field string, dir qb.OrderByDir) *DBModel {
+func (db *DBModel) OrderBy(field string, dir OrderByDir) *DBModel {
 	db.orderByStatement.Append(field, dir)
 
 	return db
@@ -858,8 +868,8 @@ func (db *DBModel) Limit(limit, offset int) *DBModel {
 //
 // Returns:
 //   - qb.Limit: The removed limit settings.
-func (db *DBModel) RemoveLimit() qb.Limit {
-	var _limitStatement qb.Limit
+func (db *DBModel) RemoveLimit() Limit {
+	var _limitStatement Limit
 
 	_limitStatement.Limit = db.limitStatement.Limit
 	_limitStatement.Offset = db.limitStatement.Offset
@@ -889,8 +899,8 @@ func (db *DBModel) Fetch(offset, fetch int) *DBModel {
 //
 // Returns:
 //   - qb.Fetch: The removed fetch settings.
-func (db *DBModel) RemoveFetch() qb.Fetch {
-	var _fetchStatement qb.Fetch
+func (db *DBModel) RemoveFetch() Fetch {
+	var _fetchStatement Fetch
 
 	_fetchStatement.Offset = db.fetchStatement.Offset
 	_fetchStatement.Fetch = db.fetchStatement.Fetch

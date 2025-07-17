@@ -1,6 +1,8 @@
 package db
 
-import qb "github.com/jivegroup/fluentsql"
+import (
+	qb "github.com/jivegroup/fluentsql"
+)
 
 // ====================================================================
 //                         Join Type
@@ -126,6 +128,29 @@ var _ qb.IValueField = (*ValueField)(nil)
 func (v ValueField) Value() string {
 	return string(v)
 }
+
+// Limit represents the SQL LIMIT and OFFSET clauses for pagination.
+//
+// Usage:
+//   - Controls the number and starting point of returned rows
+//   - Used for implementing pagination in database queries
+//
+// Example:
+//
+//	LIMIT 10 OFFSET 20
+type Limit qb.Limit
+
+// Fetch clause represents a SQL FETCH clause with offset and limit.
+// This is an alias for fluentsql.Fetch to maintain backward compatibility.
+//
+// Usage:
+//   - Controls pagination through OFFSET and FETCH NEXT clauses
+//   - Supported in MSSQL Server and Oracle databases
+//
+// Example:
+//
+//	OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY
+type Fetch qb.Fetch
 
 // FieldNot represents a SQL field prefixed with a NOT operator for negating conditions.
 // This is an alias for fluentsql.FieldNot to maintain backward compatibility.

@@ -118,9 +118,9 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 			// Build WHERE condition with specific primary value
 			wherePrimaryCondition := qb.Condition{
 				Field: primaryKey,
-				Opt:   qb.Eq,
+				Opt:   Eq,
 				Value: primaryVal,
-				AndOr: qb.And,
+				AndOr: And,
 			}
 			queryBuilder.WhereCondition(wherePrimaryCondition)
 		}
@@ -178,7 +178,7 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 		orderByField = table.Columns[0].Name
 	}
 
-	var orderByDir qb.OrderByDir
+	var orderByDir OrderByDir
 
 	// Determine order by direction based on the strategy
 	switch {
