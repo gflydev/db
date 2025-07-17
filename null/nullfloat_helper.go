@@ -5,10 +5,10 @@ import (
 	"database/sql/driver"
 )
 
-// floatType is a constraint interface that allows either float64 or *float64 types.
+// floatConstraint is a constraint interface that allows either float64 or *float64 types.
 // It is used in generic functions to handle both direct float64 values and pointers
 // to float64 values in a type-safe manner.
-type floatType interface {
+type floatConstraint interface {
 	float64 | *float64
 }
 
@@ -83,7 +83,7 @@ func FloatNil(nullFloat sql.NullFloat64) *float64 {
 //
 //	// From nil pointer
 //	nullFloat := Float64((*float64)(nil)) // Returns: {Float64: 0, Valid: false}
-func Float64[T floatType](val T) sql.NullFloat64 {
+func Float64[T floatConstraint](val T) sql.NullFloat64 {
 	switch v := any(val).(type) {
 	case float64:
 		return sql.NullFloat64{

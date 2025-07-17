@@ -5,10 +5,10 @@ import (
 	"database/sql/driver"
 )
 
-// byteType is a constraint interface that allows either byte or *byte types.
+// byteConstraint is a constraint interface that allows either byte or *byte types.
 // It is used in generic functions to handle both direct byte values and pointers
 // to byte values in a type-safe manner.
-type byteType interface {
+type byteConstraint interface {
 	byte | *byte
 }
 
@@ -83,7 +83,7 @@ func ByteNil(nullByte sql.NullByte) *byte {
 //
 //	// From nil pointer
 //	nullByte := ByteGeneric((*byte)(nil)) // Returns: {Byte: 0, Valid: false}
-func Byte[T byteType](val T) sql.NullByte {
+func Byte[T byteConstraint](val T) sql.NullByte {
 	switch v := any(val).(type) {
 	case byte:
 		return sql.NullByte{

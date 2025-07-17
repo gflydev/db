@@ -8,10 +8,10 @@ import (
 	"database/sql/driver"
 )
 
-// boolType is a constraint interface that allows either bool or *bool types.
+// boolConstraint is a constraint interface that allows either bool or *bool types.
 // It is used in generic functions to handle both direct boolean values and pointers
 // to boolean values in a type-safe manner.
-type boolType interface {
+type boolConstraint interface {
 	bool | *bool
 }
 
@@ -86,7 +86,7 @@ func BoolNil(nullBool sql.NullBool) *bool {
 //
 //	// From nil pointer
 //	nullBool := BoolGeneric((*bool)(nil)) // Returns: {Bool: false, Valid: false}
-func Bool[T boolType](val T) sql.NullBool {
+func Bool[T boolConstraint](val T) sql.NullBool {
 	switch v := any(val).(type) {
 	case bool:
 		return sql.NullBool{

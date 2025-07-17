@@ -5,10 +5,10 @@ import (
 	"database/sql/driver"
 )
 
-// stringType is a constraint interface that allows either string or *string types.
+// stringConstraint is a constraint interface that allows either string or *string types.
 // It is used in generic functions to handle both direct string values and pointers
 // to string values in a type-safe manner.
-type stringType interface {
+type stringConstraint interface {
 	string | *string
 }
 
@@ -83,7 +83,7 @@ func StringNil(nullString sql.NullString) *string {
 //
 //	// From nil pointer
 //	nullString := String((*string)(nil)) // Returns: {String: "", Valid: false}
-func String[T stringType](val T) sql.NullString {
+func String[T stringConstraint](val T) sql.NullString {
 	switch v := any(val).(type) {
 	case string:
 		return sql.NullString{

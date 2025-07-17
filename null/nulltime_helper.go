@@ -6,10 +6,10 @@ import (
 	"time"
 )
 
-// timeType is a constraint interface that allows either time.Time or *time.Time types.
+// timeConstraint is a constraint interface that allows either time.Time or *time.Time types.
 // It is used in generic functions to handle both direct time.Time values and pointers
 // to time.Time values in a type-safe manner.
-type timeType interface {
+type timeConstraint interface {
 	time.Time | *time.Time
 }
 
@@ -87,7 +87,7 @@ func TimeNil(nullTime sql.NullTime) *time.Time {
 //
 //	// From nil pointer
 //	nullTime := Time((*time.Time)(nil)) // Returns: {Time: time.Time{}, Valid: false}
-func Time[T timeType](val T) sql.NullTime {
+func Time[T timeConstraint](val T) sql.NullTime {
 	switch v := any(val).(type) {
 	case time.Time:
 		return sql.NullTime{

@@ -5,24 +5,24 @@ import (
 	"database/sql/driver"
 )
 
-// int64Type is a constraint interface that allows either int64 or *int64 types.
+// int64Constraint is a constraint interface that allows either int64 or *int64 types.
 // It is used in generic functions to handle both direct int64 values and pointers
 // to int64 values in a type-safe manner.
-type int64Type interface {
+type int64Constraint interface {
 	int64 | *int64
 }
 
-// int32Type is a constraint interface that allows either int32 or *int32 types.
+// int32Constraint is a constraint interface that allows either int32 or *int32 types.
 // It is used in generic functions to handle both direct int32 values and pointers
 // to int32 values in a type-safe manner.
-type int32Type interface {
+type int32Constraint interface {
 	int32 | *int32
 }
 
-// int16Type is a constraint interface that allows either int16 or *int16 types.
+// int16Constraint is a constraint interface that allows either int16 or *int16 types.
 // It is used in generic functions to handle both direct int16 values and pointers
 // to int16 values in a type-safe manner.
-type int16Type interface {
+type int16Constraint interface {
 	int16 | *int16
 }
 
@@ -97,7 +97,7 @@ func Int64Nil(nullInt sql.NullInt64) *int64 {
 //
 //	// From nil pointer
 //	nullInt := Int64((*int64)(nil)) // Returns: {Int64: 0, Valid: false}
-func Int64[T int64Type](val T) sql.NullInt64 {
+func Int64[T int64Constraint](val T) sql.NullInt64 {
 	switch v := any(val).(type) {
 	case int64:
 		return sql.NullInt64{
@@ -195,7 +195,7 @@ func Int32Nil(nullInt sql.NullInt32) *int32 {
 //
 //	// From nil pointer
 //	nullInt := Int32((*int32)(nil)) // Returns: {Int32: 0, Valid: false}
-func Int32[T int32Type](val T) sql.NullInt32 {
+func Int32[T int32Constraint](val T) sql.NullInt32 {
 	switch v := any(val).(type) {
 	case int32:
 		return sql.NullInt32{
@@ -293,7 +293,7 @@ func Int16Nil(nullInt sql.NullInt16) *int16 {
 //
 //	// From nil pointer
 //	nullInt := Int16((*int16)(nil)) // Returns: {Int16: 0, Valid: false}
-func Int16[T int16Type](val T) sql.NullInt16 {
+func Int16[T int16Constraint](val T) sql.NullInt16 {
 	switch v := any(val).(type) {
 	case int16:
 		return sql.NullInt16{
