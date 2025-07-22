@@ -9,12 +9,11 @@ import (
 	"github.com/gflydev/core/log"
 	"github.com/gflydev/core/try"
 	"github.com/gflydev/core/utils"
+	mb "github.com/gflydev/db"
 	dbPSQL "github.com/gflydev/db/psql"
-	mb "github.com/gflydev/db/v2
 	"github.com/gflydev/session"
 	sessionMemory "github.com/gflydev/session/memory"
 	"github.com/gflydev/view/pongo"
-	qb "github.com/jivegroup/fluentsql"
 	"time"
 
 	// Autoload .env file
@@ -169,9 +168,9 @@ func genericDao() {
 		}
 
 		// ----- FindModels -----
-		users, total, err := mb.FindModels[models.User](1, 100, "id", qb.Desc, qb.Condition{
+		users, total, err := mb.FindModels[models.User](1, 100, "id", mb.Desc, mb.Condition{
 			Field: "id",
-			Opt:   qb.NotEq,
+			Opt:   mb.NotEq,
 			Value: 0,
 		})
 		if err != nil {

@@ -6,8 +6,8 @@ import (
 	"github.com/gflydev/core"
 	"github.com/gflydev/core/try"
 	"github.com/gflydev/core/utils"
+	mb "github.com/gflydev/db"
 	dbMySQL "github.com/gflydev/db/mysql"
-	mb "github.com/gflydev/db/v2
 	"github.com/gflydev/session"
 	sessionMemory "github.com/gflydev/session/memory"
 	"github.com/gflydev/view/pongo"
@@ -88,7 +88,7 @@ func (m *SessionPage) Handle(c *core.Ctx) error {
 //                                     Routers
 // =========================================================================================
 
-func router(g core.IFlyRouter) {
+func router(g core.IFly) {
 	prefixAPI := fmt.Sprintf(
 		"/%s/%s",
 		utils.Getenv("API_PREFIX", "api"),

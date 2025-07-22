@@ -76,7 +76,7 @@ func (db *DBModel) Create(model any) (err error) {
 	}
 
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 
 	// Reset fluent model builder
