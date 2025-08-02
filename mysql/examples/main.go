@@ -4,6 +4,7 @@ import (
 	"examples/models"
 	"fmt"
 	"github.com/gflydev/core"
+	"github.com/gflydev/core/log"
 	"github.com/gflydev/core/try"
 	"github.com/gflydev/core/utils"
 	mb "github.com/gflydev/db"
@@ -11,7 +12,6 @@ import (
 	"github.com/gflydev/session"
 	sessionMemory "github.com/gflydev/session/memory"
 	"github.com/gflydev/view/pongo"
-	"log"
 
 	// Autoload .env file
 	_ "github.com/joho/godotenv/autoload"
@@ -126,9 +126,9 @@ func queryUser() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("User %v\n", user)
+		log.Infof("User %v\n", user)
 	}).Catch(func(e try.E) {
-		log.Printf("Error %v\n", e)
+		log.Infof("Error %v\n", e)
 	})
 
 }

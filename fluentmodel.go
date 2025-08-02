@@ -2,10 +2,10 @@ package db
 
 import (
 	"database/sql"
+	"github.com/gflydev/core/log"
 	"github.com/gflydev/core/utils"
 	qb "github.com/jivegroup/fluentsql"
 	"github.com/jmoiron/sqlx"
-	"log"
 )
 
 // ====================================================================
@@ -269,7 +269,7 @@ func (db *DBModel) get(q *qb.QueryBuilder, model any) (err error) {
 //   - err (error): Error encountered during execution, if any.
 func (db *DBModel) getRaw(sqlStr string, args []any, model any) (err error) {
 	if utils.Getenv("DB_DEBUG", false) {
-		log.Printf("SQL> %s - args %v", sqlStr, args)
+		log.Infof("SQL> %s - args %v", sqlStr, args)
 	}
 
 	if db.tx != nil {
@@ -309,7 +309,7 @@ func (db *DBModel) query(q *qb.QueryBuilder, model any) (err error) {
 //   - err (error): Error encountered during execution, if any.
 func (db *DBModel) queryRaw(sqlStr string, args []any, model any) (err error) {
 	if utils.Getenv("DB_DEBUG", false) {
-		log.Printf("SQL> %s - args %v", sqlStr, args)
+		log.Infof("SQL> %s - args %v", sqlStr, args)
 	}
 
 	if db.tx != nil {
@@ -325,12 +325,12 @@ func (db *DBModel) queryRaw(sqlStr string, args []any, model any) (err error) {
 //
 // Parameters:
 //   - q (*qb.InsertBuilder): The insert query builder with the SQL and arguments.
-//   - primaryColumn (string): The primary column to return, used for PostgreSQL.
+//   - primaryColumn (*Column): The primary column to return, used for PostgreSQL.
 //
 // Returns:
 //   - id (any): The ID of the newly inserted row.
 //   - err (error): Error encountered during execution, if any.
-func (db *DBModel) add(q *qb.InsertBuilder, primaryColumn string) (id any, err error) {
+func (db *DBModel) add(q *qb.InsertBuilder, primaryColumn *Column) (id any, err error) {
 	var sqlStr string
 	var args []any
 
@@ -344,24 +344,33 @@ func (db *DBModel) add(q *qb.InsertBuilder, primaryColumn string) (id any, err e
 // Parameters:
 //   - sqlStr (string): The raw SQL insert query string.
 //   - args ([]any): Arguments for the query placeholders.
-//   - primaryColumn (string): The primary column to return, used for PostgreSQL.
+//   - primaryColumn (*Column): The primary column to return, used for PostgreSQL.
 //
 // Returns:
 //   - id (any): The ID of the newly inserted row.
 //   - err (error): Error encountered during execution, if any.
-func (db *DBModel) addRaw(sqlStr string, args []any, primaryColumn string) (id any, err error) {
+func (db *DBModel) addRaw(sqlStr string, args []any, primaryColumn *Column) (id any, err error) {
 	if utils.Getenv("DB_DEBUG", false) {
-		log.Printf("SQL> %s - args %v", sqlStr, args)
+		log.Infof("SQL> %s - args %v", sqlStr, args)
+	}
+
+	// If no primaryColumn is provided, we don't need to retrieve the ID
+	if primaryColumn == nil {
+		// Just execute the query without returning an ID
+		if db.tx != nil {
+			_, err = db.tx.Exec(sqlStr, args...)
+		} else {
+			_, err = dbInstance.Exec(sqlStr, args...)
+		}
+		return nil, err
 	}
 
 	// Data persistence
 	if qb.IsDialect(qb.PostgreSQL) {
-		if primaryColumn != "" {
-			sqlStr += " RETURNING " + primaryColumn
+		sqlStr += " RETURNING " + primaryColumn.Name
 
-			if utils.Getenv("DB_DEBUG", false) {
-				log.Printf("Changed SQL> %s", sqlStr)
-			}
+		if utils.Getenv("DB_DEBUG", false) {
+			log.Infof("Changed SQL> %s", sqlStr)
 		}
 
 		if db.tx != nil {
@@ -425,7 +434,7 @@ func (db *DBModel) delete(q *qb.DeleteBuilder) (err error) {
 //   - err (error): Error encountered during execution, if any.
 func (db *DBModel) execRaw(sqlStr string, args []any) (err error) {
 	if utils.Getenv("DB_DEBUG", false) {
-		log.Printf("SQL> %s - args %v", sqlStr, args)
+		log.Infof("SQL> %s - args %v", sqlStr, args)
 	}
 
 	// Data persistence

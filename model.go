@@ -113,18 +113,20 @@ type MetaData string
 //   - The structure supports both simple and complex database schemas
 //   - Used internally by all ORM operations for metadata and value extraction
 type Table struct {
-	Name      string         // Database table name derived from struct name (snake_case)
-	Columns   []Column       // Complete column definitions with metadata and constraints
-	Primaries []Column       // Primary key columns for unique identification and operations
-	Values    map[string]any // Current column values indexed by column name for operations
-	Relation  []*Table       // Related table structures for foreign key and JOIN operations
-	HasData   bool           // Flag indicating presence of valid, non-zero data in the struct
+	Name          string         // Database table name derived from struct name (snake_case)
+	PrimarySerial *Column        // Primary serial column for unique identification and operations
+	Primaries     []Column       // Primary key columns for unique identification and operations
+	Columns       []Column       // Complete column definitions with metadata and constraints
+	Values        map[string]any // Current column values indexed by column name for operations
+	Relation      []*Table       // Related table structures for foreign key and JOIN operations
+	HasData       bool           // Flag indicating the presence of valid, non-zero data in the struct
 }
 
 // Column structure that maps a struct field to a database table column
 type Column struct {
 	Key      string // Name of the struct field the column maps to
 	Name     string // Name of the database column
+	Serial   bool   // Indicates if the column is a serial column
 	Primary  bool   // Indicates if the column is a primary key
 	Types    string // Data type of the column
 	Ref      string // Reference to another table column
@@ -223,6 +225,8 @@ func processModel(typ reflect.Type, value reflect.Value, tbl *Table) *Table {
 
 		// Check if the field is a primary column by analyzing its `type` attribute.
 		isPrimaryColumn := isPrimary(attr[TYPE])
+		// Check if the field is a serial column by analyzing its `type` attribute.
+		isSerialColumn := isSerial(attr[TYPE])
 
 		// Process special MetaData type fields for table-specific settings.
 		if typeField.Type == reflect.TypeOf(MetaData("")) {
@@ -244,8 +248,7 @@ func processModel(typ reflect.Type, value reflect.Value, tbl *Table) *Table {
 		// Check if the field has a valid value.
 		validValue := valueField.IsValid()
 
-		// Handle zero values for primary columns or other fields.
-		validValueType := (isPrimaryColumn && valueField.CanInt() && !valueField.IsZero()) || !isPrimaryColumn
+		validValueType := (isSerialColumn && valueField.CanInt() && !valueField.IsZero()) || !isSerialColumn
 
 		// Store the value in the Table and update column metadata.
 		if validValue && validValueType {
@@ -291,10 +294,16 @@ func processModel(typ reflect.Type, value reflect.Value, tbl *Table) *Table {
 			}
 		}
 
-		// Mark the column as a primary key if applicable.
 		col.Primary = isPrimaryColumn
-		if col.Primary {
+		col.Serial = isSerialColumn
+
+		// Mark the column as a primary key if applicable.
+		if isPrimaryColumn {
 			tbl.Primaries = append(tbl.Primaries, col)
+		}
+		// Mark the column as a primary serial key if applicable.
+		if isSerialColumn && isPrimaryColumn {
+			tbl.PrimarySerial = &col
 		}
 
 		// Add the column to the list of table columns.
@@ -381,6 +390,26 @@ func isPrimary(slice []string) bool {
 	}
 
 	// Return false if no "primary" attribute is found.
+	return false
+}
+
+// isSerial determines if a slice of strings contains the keyword "serial",
+// which designates a database column as an auto-incrementing serial column.
+//
+// Parameters:
+//   - slice ([]string): A slice of strings containing column attributes.
+//
+// Returns:
+//   - bool: Returns true if the slice includes the "serial" attribute, false otherwise.
+func isSerial(slice []string) bool {
+	for i := 0; i < len(slice); i++ {
+		switch slice[i] {
+		case "serial": // Check if the current attribute is "serial".
+			return true
+		}
+	}
+
+	// Return false if no "serial" attribute is found.
 	return false
 }
 

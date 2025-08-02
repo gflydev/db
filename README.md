@@ -96,9 +96,9 @@ if err != nil {
 }
 
 // ----- FindModels -----
-users, total, err := mb.FindModels[models.User](1, 100, "id", qb.Desc, qb.Condition{
+users, total, err := mb.FindModels[models.User](1, 100, "id", mb.Desc, mb.Condition{
         Field: "id",
-        Opt:   qb.NotEq,
+        Opt:   mb.NotEq,
         Value: 0,
     })
 if err != nil {
@@ -241,7 +241,7 @@ log.Printf("User %v\n", user6)
 ```go
 var user7 User
 err = db.Where("Id", Eq, 100).
-    WhereGroup(func(query qb.WhereBuilder) *qb.WhereBuilder {
+    WhereGroup(func(query mb.WhereBuilder) *mb.WhereBuilder {
         query.Where("age", Eq, 42).
             WhereOr("age", Eq, 39)
 
@@ -310,10 +310,10 @@ for _, user := range users3 {
 var users4 []UserJoin
 _, err = db.Model(&UserJoin{}).
     Select("name, age, email, phone").
-    Join(qb.InnerJoin, "user_details", qb.Condition{
+    Join(mb.InnerJoin, "user_details", mb.Condition{
         Field: "users.id",
         Opt:   Eq,
-        Value: qb.ValueField("user_details.user_id"),
+        Value: mb.ValueField("user_details.user_id"),
     }).
     Where("users.name", Eq, "Kite").
     Find(&users4)

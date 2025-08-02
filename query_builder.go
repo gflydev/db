@@ -111,11 +111,11 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 
 	// Build WHERE condition using primary columns
 	for _, primaryColumn := range table.Primaries {
-		primaryKey := primaryColumn.Name
-		primaryVal := table.Values[primaryKey]
+		if !primaryColumn.IsZero {
+			primaryKey := primaryColumn.Name
+			primaryVal := table.Values[primaryKey]
 
-		if primaryVal != nil {
-			// Build WHERE condition with specific primary value
+			// Build WHERE condition with a specific primary value
 			wherePrimaryCondition := qb.Condition{
 				Field: primaryKey,
 				Opt:   Eq,
@@ -126,7 +126,7 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 		}
 	}
 
-	// Build WHERE condition from condition list
+	// Build WHERE condition from a condition list
 	for _, condition := range db.whereStatement.Conditions {
 		// Handle grouped or individual conditions
 		switch {

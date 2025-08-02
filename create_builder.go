@@ -122,37 +122,29 @@ func (db *DBModel) Create(model any) (err error) {
 //   - Requires exactly one primary key column in the table for ID population
 //   - The model structure must match the target table for proper metadata extraction
 //   - Primary key population only occurs if the table has a single primary key column
-func (db *DBModel) createByRaw(model any) error {
+func (db *DBModel) createByRaw(model any) (err error) {
 	var table *Table
-	var err error
 
 	// Create a table object from a model
 	table, err = ModelData(model)
 	if err != nil {
-		return err
+		return
 	}
 
 	var id any
-	var primaryColumn Column
+	var primaryColumn = table.PrimarySerial
 
-	// Get primary column name (if only one primary in table exists)
-	if len(table.Primaries) == 1 {
-		primaryColumn = table.Primaries[0]
-	}
-
-	// Perform raw insertion and retrieve the ID
-	id, err = db.addRaw(db.raw.sqlStr, db.raw.args, primaryColumn.Name)
-
-	if err != nil {
-		return err
+	// Perform raw insertion and try to retrieve the ID
+	if id, err = db.addRaw(db.raw.sqlStr, db.raw.args, primaryColumn); err != nil {
+		return
 	}
 
 	// Set ID back to the model
-	if primaryColumn.Key != "" {
+	if primaryColumn != nil {
 		err = setValue(model, primaryColumn.Key, id)
 	}
 
-	return err
+	return
 }
 
 // createByMap inserts a database record using key-value pairs from a map.
@@ -408,8 +400,7 @@ func (db *DBModel) createByStruct(model any) (err error) {
 
 	// Generate insert columns and values by iterating over table columns
 	for _, column := range table.Columns {
-		// Skip columns that are not data or are primary keys
-		if column.isNotData() || column.Primary {
+		if column.isNotData() || column.IsZero {
 			continue
 		}
 
@@ -435,20 +426,15 @@ func (db *DBModel) createByStruct(model any) (err error) {
 		Row(values...)
 
 	var id any
-	var primaryColumn Column
+	var primaryColumn = table.PrimarySerial
 
-	// Check if there is exactly one primary column
-	if len(table.Primaries) == 1 {
-		primaryColumn = table.Primaries[0]
-	}
-
-	// Perform the insert and retrieve the ID
-	if id, err = db.add(insertBuilder, primaryColumn.Name); err != nil {
+	// Perform the insert and Try to retrieve the ID
+	if id, err = db.add(insertBuilder, primaryColumn); err != nil {
 		return
 	}
 
 	// Set the ID back to the model
-	if primaryColumn.Key != "" {
+	if primaryColumn != nil {
 		err = setValue(model, primaryColumn.Key, id)
 	}
 
