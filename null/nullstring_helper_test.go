@@ -126,6 +126,54 @@ func TestStringNil(t *testing.T) {
 	}
 }
 
+func TestStringVal(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    sql.NullString
+		expected string
+	}{
+		{
+			name:     "valid string hello",
+			input:    sql.NullString{String: "hello", Valid: true},
+			expected: "hello",
+		},
+		{
+			name:     "valid empty string",
+			input:    sql.NullString{String: "", Valid: true},
+			expected: "",
+		},
+		{
+			name:     "valid string with spaces",
+			input:    sql.NullString{String: "  hello world  ", Valid: true},
+			expected: "  hello world  ",
+		},
+		{
+			name:     "valid string with special characters",
+			input:    sql.NullString{String: "hello\nworld\t!", Valid: true},
+			expected: "hello\nworld\t!",
+		},
+		{
+			name:     "invalid null",
+			input:    sql.NullString{String: "", Valid: false},
+			expected: "",
+		},
+		{
+			name:     "invalid null with value",
+			input:    sql.NullString{String: "test", Valid: false},
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := StringVal(tt.input)
+			if result != tt.expected {
+				t.Errorf("StringVal(%v) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestString(t *testing.T) {
 	t.Run("string value non-empty", func(t *testing.T) {
 		result := String("hello")

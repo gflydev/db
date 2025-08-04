@@ -60,6 +60,22 @@ func FloatNil(nullFloat sql.NullFloat64) *float64 {
 	return &nullFloat.Float64
 }
 
+// FloatVal returns the float64 value of a sql.NullFloat64.
+// If the NullFloat64 is invalid (i.e., Valid is false), it returns 0.
+//
+// Parameters:
+//   - nullFloat (sql.NullFloat64): The nullable float64 value to convert.
+//
+// Returns:
+//   - float64: The float64 value if valid, or 0 if the NullFloat64 is invalid/null.
+func FloatVal(nullFloat sql.NullFloat64) float64 {
+	if !nullFloat.Valid {
+		return 0
+	}
+
+	return nullFloat.Float64
+}
+
 // Float64 creates a sql.NullFloat64 from type-constrained input types.
 // This function provides a type-safe way to create nullable float64 values
 // for database operations, handling both direct values and pointers with compile-time type checking.

@@ -143,6 +143,59 @@ func TestFloatNil(t *testing.T) {
 	}
 }
 
+func TestFloatVal(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    sql.NullFloat64
+		expected float64
+	}{
+		{
+			name:     "valid float 3.14",
+			input:    sql.NullFloat64{Float64: 3.14, Valid: true},
+			expected: 3.14,
+		},
+		{
+			name:     "valid float 0.0",
+			input:    sql.NullFloat64{Float64: 0.0, Valid: true},
+			expected: 0.0,
+		},
+		{
+			name:     "valid negative float",
+			input:    sql.NullFloat64{Float64: -123.456, Valid: true},
+			expected: -123.456,
+		},
+		{
+			name:     "valid max float64",
+			input:    sql.NullFloat64{Float64: math.MaxFloat64, Valid: true},
+			expected: math.MaxFloat64,
+		},
+		{
+			name:     "valid min float64",
+			input:    sql.NullFloat64{Float64: -math.MaxFloat64, Valid: true},
+			expected: -math.MaxFloat64,
+		},
+		{
+			name:     "invalid null",
+			input:    sql.NullFloat64{Float64: 0.0, Valid: false},
+			expected: 0.0,
+		},
+		{
+			name:     "invalid null with value",
+			input:    sql.NullFloat64{Float64: 123.456, Valid: false},
+			expected: 0.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FloatVal(tt.input)
+			if result != tt.expected {
+				t.Errorf("FloatVal(%v) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestFloat64(t *testing.T) {
 	t.Run("float64 value positive", func(t *testing.T) {
 		result := Float64(3.14)

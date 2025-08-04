@@ -60,6 +60,22 @@ func ByteNil(nullByte sql.NullByte) *byte {
 	return &nullByte.Byte
 }
 
+// ByteVal returns the byte value of a sql.NullByte.
+// If the NullByte is invalid (i.e., Valid is false), it returns 0.
+//
+// Parameters:
+//   - nullByte (sql.NullByte): The nullable byte value to convert.
+//
+// Returns:
+//   - byte: The byte value if valid, or 0 if the NullByte is invalid/null.
+func ByteVal(nullByte sql.NullByte) byte {
+	if !nullByte.Valid {
+		return 0
+	}
+
+	return nullByte.Byte
+}
+
 // Byte creates a sql.NullByte from type-constrained input types.
 // This function provides a type-safe way to create nullable byte values
 // for database operations, handling both direct values and pointers with compile-time type checking.

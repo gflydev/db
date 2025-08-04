@@ -100,6 +100,49 @@ func TestByteNil(t *testing.T) {
 	}
 }
 
+func TestByteVal(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    sql.NullByte
+		expected byte
+	}{
+		{
+			name:     "valid byte 65 (A)",
+			input:    sql.NullByte{Byte: 65, Valid: true},
+			expected: byte(65),
+		},
+		{
+			name:     "valid byte 0",
+			input:    sql.NullByte{Byte: 0, Valid: true},
+			expected: byte(0),
+		},
+		{
+			name:     "valid byte 255",
+			input:    sql.NullByte{Byte: 255, Valid: true},
+			expected: byte(255),
+		},
+		{
+			name:     "invalid null",
+			input:    sql.NullByte{Byte: 0, Valid: false},
+			expected: byte(0),
+		},
+		{
+			name:     "invalid null with value",
+			input:    sql.NullByte{Byte: 100, Valid: false},
+			expected: byte(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ByteVal(tt.input)
+			if result != tt.expected {
+				t.Errorf("ByteVal(%v) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestByte(t *testing.T) {
 	t.Run("byte value 65 (A)", func(t *testing.T) {
 		result := Byte(byte(65))

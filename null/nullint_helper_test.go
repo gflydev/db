@@ -122,6 +122,59 @@ func TestInt64Nil(t *testing.T) {
 	}
 }
 
+func TestInt64Val(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    sql.NullInt64
+		expected int64
+	}{
+		{
+			name:     "valid int64 42",
+			input:    sql.NullInt64{Int64: 42, Valid: true},
+			expected: int64(42),
+		},
+		{
+			name:     "valid int64 0",
+			input:    sql.NullInt64{Int64: 0, Valid: true},
+			expected: int64(0),
+		},
+		{
+			name:     "valid negative int64",
+			input:    sql.NullInt64{Int64: -123, Valid: true},
+			expected: int64(-123),
+		},
+		{
+			name:     "valid max int64",
+			input:    sql.NullInt64{Int64: math.MaxInt64, Valid: true},
+			expected: int64(math.MaxInt64),
+		},
+		{
+			name:     "valid min int64",
+			input:    sql.NullInt64{Int64: math.MinInt64, Valid: true},
+			expected: int64(math.MinInt64),
+		},
+		{
+			name:     "invalid null",
+			input:    sql.NullInt64{Int64: 0, Valid: false},
+			expected: int64(0),
+		},
+		{
+			name:     "invalid null with value",
+			input:    sql.NullInt64{Int64: 123, Valid: false},
+			expected: int64(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Int64Val(tt.input)
+			if result != tt.expected {
+				t.Errorf("Int64Val(%v) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestInt64(t *testing.T) {
 	t.Run("int64 value positive", func(t *testing.T) {
 		result := Int64(int64(123456789))
@@ -290,6 +343,59 @@ func TestInt32Nil(t *testing.T) {
 	}
 }
 
+func TestInt32Val(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    sql.NullInt32
+		expected int32
+	}{
+		{
+			name:     "valid int32 42",
+			input:    sql.NullInt32{Int32: 42, Valid: true},
+			expected: int32(42),
+		},
+		{
+			name:     "valid int32 0",
+			input:    sql.NullInt32{Int32: 0, Valid: true},
+			expected: int32(0),
+		},
+		{
+			name:     "valid negative int32",
+			input:    sql.NullInt32{Int32: -123, Valid: true},
+			expected: int32(-123),
+		},
+		{
+			name:     "valid max int32",
+			input:    sql.NullInt32{Int32: math.MaxInt32, Valid: true},
+			expected: int32(math.MaxInt32),
+		},
+		{
+			name:     "valid min int32",
+			input:    sql.NullInt32{Int32: math.MinInt32, Valid: true},
+			expected: int32(math.MinInt32),
+		},
+		{
+			name:     "invalid null",
+			input:    sql.NullInt32{Int32: 0, Valid: false},
+			expected: int32(0),
+		},
+		{
+			name:     "invalid null with value",
+			input:    sql.NullInt32{Int32: 123, Valid: false},
+			expected: int32(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Int32Val(tt.input)
+			if result != tt.expected {
+				t.Errorf("Int32Val(%v) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestInt32(t *testing.T) {
 	t.Run("int32 value positive", func(t *testing.T) {
 		result := Int32(int32(123456))
@@ -436,6 +542,59 @@ func TestInt16Nil(t *testing.T) {
 				} else if *result != *tt.expected {
 					t.Errorf("Int16Nil(%v) = %v, want %v", tt.input, *result, *tt.expected)
 				}
+			}
+		})
+	}
+}
+
+func TestInt16Val(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    sql.NullInt16
+		expected int16
+	}{
+		{
+			name:     "valid int16 42",
+			input:    sql.NullInt16{Int16: 42, Valid: true},
+			expected: int16(42),
+		},
+		{
+			name:     "valid int16 0",
+			input:    sql.NullInt16{Int16: 0, Valid: true},
+			expected: int16(0),
+		},
+		{
+			name:     "valid negative int16",
+			input:    sql.NullInt16{Int16: -123, Valid: true},
+			expected: int16(-123),
+		},
+		{
+			name:     "valid max int16",
+			input:    sql.NullInt16{Int16: math.MaxInt16, Valid: true},
+			expected: int16(math.MaxInt16),
+		},
+		{
+			name:     "valid min int16",
+			input:    sql.NullInt16{Int16: math.MinInt16, Valid: true},
+			expected: int16(math.MinInt16),
+		},
+		{
+			name:     "invalid null",
+			input:    sql.NullInt16{Int16: 0, Valid: false},
+			expected: int16(0),
+		},
+		{
+			name:     "invalid null with value",
+			input:    sql.NullInt16{Int16: 123, Valid: false},
+			expected: int16(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Int16Val(tt.input)
+			if result != tt.expected {
+				t.Errorf("Int16Val(%v) = %v, want %v", tt.input, result, tt.expected)
 			}
 		})
 	}

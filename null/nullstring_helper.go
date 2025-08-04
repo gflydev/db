@@ -60,6 +60,31 @@ func StringNil(nullString sql.NullString) *string {
 	return &nullString.String
 }
 
+// StringVal returns the string value of a sql.NullString.
+// If the NullString is valid, it returns the string value.
+// If the NullString is invalid, it returns an empty string.
+//
+// Parameters:
+//   - nullString (sql.NullString): The nullable string value to convert.
+//
+// Returns:
+//   - string: The string value if valid, or an empty string if invalid.
+//
+// Example:
+//
+//	nullString := sql.NullString{String: "hello", Valid: true}
+//	result := StringVal(nullString) // Returns: "hello"
+//
+//	invalidString := sql.NullString{String: "", Valid: false}
+//	result := StringVal(invalidString) // Returns: ""
+func StringVal(nullString sql.NullString) string {
+	if !nullString.Valid {
+		return ""
+	}
+
+	return nullString.String
+}
+
 // String creates a sql.NullString from type-constrained input types.
 // This function provides a type-safe way to create nullable string values
 // for database operations, handling both direct values and pointers with compile-time type checking.

@@ -74,6 +74,31 @@ func Int64Nil(nullInt sql.NullInt64) *int64 {
 	return &nullInt.Int64
 }
 
+// Int64Val returns the int64 value of a sql.NullInt64.
+// If the NullInt64 is valid, it returns the int64 value.
+// If the NullInt64 is invalid, it returns 0.
+//
+// Parameters:
+//   - nullInt (sql.NullInt64): The nullable int64 value to convert.
+//
+// Returns:
+//   - int64: The int64 value if valid, or 0 if invalid.
+//
+// Example:
+//
+//	nullInt := sql.NullInt64{Int64: 42, Valid: true}
+//	result := Int64Val(nullInt) // Returns: 42
+//
+//	invalidInt := sql.NullInt64{Int64: 0, Valid: false}
+//	result := Int64Val(invalidInt) // Returns: 0
+func Int64Val(nullInt sql.NullInt64) int64 {
+	if !nullInt.Valid {
+		return 0
+	}
+
+	return nullInt.Int64
+}
+
 // Int64 creates a sql.NullInt64 from type-constrained input types.
 // This function provides a type-safe way to create nullable int64 values
 // for database operations, handling both direct values and pointers with compile-time type checking.
@@ -172,6 +197,31 @@ func Int32Nil(nullInt sql.NullInt32) *int32 {
 	return &nullInt.Int32
 }
 
+// Int32Val returns the int32 value of a sql.NullInt32.
+// If the NullInt32 is valid, it returns the int32 value.
+// If the NullInt32 is invalid, it returns 0.
+//
+// Parameters:
+//   - nullInt (sql.NullInt32): The nullable int32 value to convert.
+//
+// Returns:
+//   - int32: The int32 value if valid, or 0 if invalid.
+//
+// Example:
+//
+//	nullInt := sql.NullInt32{Int32: 42, Valid: true}
+//	result := Int32Val(nullInt) // Returns: 42
+//
+//	invalidInt := sql.NullInt32{Int32: 0, Valid: false}
+//	result := Int32Val(invalidInt) // Returns: 0
+func Int32Val(nullInt sql.NullInt32) int32 {
+	if !nullInt.Valid {
+		return 0
+	}
+
+	return nullInt.Int32
+}
+
 // Int32 creates a sql.NullInt32 from type-constrained input types.
 // This function provides a type-safe way to create nullable int32 values
 // for database operations, handling both direct values and pointers with compile-time type checking.
@@ -268,6 +318,31 @@ func Int16Nil(nullInt sql.NullInt16) *int16 {
 		return nil
 	}
 	return &nullInt.Int16
+}
+
+// Int16Val returns the int16 value of a sql.NullInt16.
+// If the NullInt16 is valid, it returns the int16 value.
+// If the NullInt16 is invalid, it returns 0.
+//
+// Parameters:
+//   - nullInt (sql.NullInt16): The nullable int16 value to convert.
+//
+// Returns:
+//   - int16: The int16 value if valid, or 0 if invalid.
+//
+// Example:
+//
+//	nullInt := sql.NullInt16{Int16: 42, Valid: true}
+//	result := Int16Val(nullInt) // Returns: 42
+//
+//	invalidInt := sql.NullInt16{Int16: 0, Valid: false}
+//	result := Int16Val(invalidInt) // Returns: 0
+func Int16Val(nullInt sql.NullInt16) int16 {
+	if !nullInt.Valid {
+		return 0
+	}
+
+	return nullInt.Int16
 }
 
 // Int16 creates a sql.NullInt16 from type-constrained input types.
