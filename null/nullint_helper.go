@@ -2,7 +2,6 @@ package null
 
 import (
 	"database/sql"
-	"database/sql/driver"
 )
 
 // int64Constraint is a constraint interface that allows either int64 or *int64 types.
@@ -24,30 +23,6 @@ type int32Constraint interface {
 // to int16 values in a type-safe manner.
 type int16Constraint interface {
 	int16 | *int16
-}
-
-// Int64Any converts a sql.NullInt64 to a driver.Value for database operations.
-// This function is typically used when you need to pass a nullable int64 value
-// to database driver operations.
-//
-// Parameters:
-//   - nullInt (sql.NullInt64): The nullable int64 value to convert.
-//
-// Returns:
-//   - driver.Value: The int64 value if valid, or nil if the NullInt64 is invalid/null.
-//
-// Example:
-//
-//	nullInt := sql.NullInt64{Int64: 42, Valid: true}
-//	value := Int64Any(nullInt) // Returns: 42
-//
-//	invalidInt := sql.NullInt64{Int64: 0, Valid: false}
-//	value := Int64Any(invalidInt) // Returns: nil
-func Int64Any(nullInt sql.NullInt64) driver.Value {
-	if !nullInt.Valid {
-		return nil
-	}
-	return nullInt.Int64
 }
 
 // Int64Nil converts a sql.NullInt64 to a pointer to int64 (*int64).
@@ -149,30 +124,6 @@ func Int64[T int64Constraint](val T) sql.NullInt64 {
 	}
 }
 
-// Int32Any converts a sql.NullInt32 to a driver.Value for database operations.
-// This function is typically used when you need to pass a nullable int32 value
-// to database driver operations.
-//
-// Parameters:
-//   - nullInt (sql.NullInt32): The nullable int32 value to convert.
-//
-// Returns:
-//   - driver.Value: The int32 value if valid, or nil if the NullInt32 is invalid/null.
-//
-// Example:
-//
-//	nullInt := sql.NullInt32{Int32: 42, Valid: true}
-//	value := Int32Any(nullInt) // Returns: 42
-//
-//	invalidInt := sql.NullInt32{Int32: 0, Valid: false}
-//	value := Int32Any(invalidInt) // Returns: nil
-func Int32Any(nullInt sql.NullInt32) driver.Value {
-	if !nullInt.Valid {
-		return nil
-	}
-	return nullInt.Int32
-}
-
 // Int32Nil converts a sql.NullInt32 to a pointer to int32 (*int32).
 // This function is useful when you need to work with nullable int32 values
 // in your application logic, where nil represents a null database value.
@@ -270,30 +221,6 @@ func Int32[T int32Constraint](val T) sql.NullInt32 {
 			Valid: false,
 		}
 	}
-}
-
-// Int16Any converts a sql.NullInt16 to a driver.Value for database operations.
-// This function is typically used when you need to pass a nullable int16 value
-// to database driver operations.
-//
-// Parameters:
-//   - nullInt (sql.NullInt16): The nullable int16 value to convert.
-//
-// Returns:
-//   - driver.Value: The int16 value if valid, or nil if the NullInt16 is invalid/null.
-//
-// Example:
-//
-//	nullInt := sql.NullInt16{Int16: 42, Valid: true}
-//	value := Int16Any(nullInt) // Returns: 42
-//
-//	invalidInt := sql.NullInt16{Int16: 0, Valid: false}
-//	value := Int16Any(invalidInt) // Returns: nil
-func Int16Any(nullInt sql.NullInt16) driver.Value {
-	if !nullInt.Valid {
-		return nil
-	}
-	return nullInt.Int16
 }
 
 // Int16Nil converts a sql.NullInt16 to a pointer to int16 (*int16).

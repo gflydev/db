@@ -5,7 +5,6 @@ package null
 
 import (
 	"database/sql"
-	"database/sql/driver"
 )
 
 // boolConstraint is a constraint interface that allows either bool or *bool types.
@@ -13,30 +12,6 @@ import (
 // to boolean values in a type-safe manner.
 type boolConstraint interface {
 	bool | *bool
-}
-
-// BoolAny converts a sql.NullBool to a driver.Value for database operations.
-// This function is typically used when you need to pass a nullable boolean value
-// to database driver operations.
-//
-// Parameters:
-//   - nullBool (sql.NullBool): The nullable boolean value to convert.
-//
-// Returns:
-//   - driver.Value: The boolean value if valid, or nil if the NullBool is invalid/null.
-//
-// Example:
-//
-//	nullBool := sql.NullBool{Bool: true, Valid: true}
-//	value := BoolAny(nullBool) // Returns: true
-//
-//	invalidBool := sql.NullBool{Bool: false, Valid: false}
-//	value := BoolAny(invalidBool) // Returns: nil
-func BoolAny(nullBool sql.NullBool) driver.Value {
-	if !nullBool.Valid {
-		return nil
-	}
-	return nullBool.Bool
 }
 
 // BoolNil converts a sql.NullBool to a pointer to bool (*bool).

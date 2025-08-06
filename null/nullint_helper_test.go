@@ -2,64 +2,11 @@ package null
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"math"
 	"testing"
 )
 
 // Tests for Int64 functions
-func TestInt64Any(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    sql.NullInt64
-		expected driver.Value
-	}{
-		{
-			name:     "valid positive int64",
-			input:    sql.NullInt64{Int64: 123456789, Valid: true},
-			expected: int64(123456789),
-		},
-		{
-			name:     "valid negative int64",
-			input:    sql.NullInt64{Int64: -987654321, Valid: true},
-			expected: int64(-987654321),
-		},
-		{
-			name:     "valid zero",
-			input:    sql.NullInt64{Int64: 0, Valid: true},
-			expected: int64(0),
-		},
-		{
-			name:     "valid max int64",
-			input:    sql.NullInt64{Int64: math.MaxInt64, Valid: true},
-			expected: int64(math.MaxInt64),
-		},
-		{
-			name:     "valid min int64",
-			input:    sql.NullInt64{Int64: math.MinInt64, Valid: true},
-			expected: int64(math.MinInt64),
-		},
-		{
-			name:     "invalid null",
-			input:    sql.NullInt64{Int64: 0, Valid: false},
-			expected: nil,
-		},
-		{
-			name:     "invalid null with value",
-			input:    sql.NullInt64{Int64: 12345, Valid: false},
-			expected: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := Int64Any(tt.input)
-			if result != tt.expected {
-				t.Errorf("Int64Any(%v) = %v, want %v", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
 
 func TestInt64Nil(t *testing.T) {
 	tests := []struct {
@@ -244,58 +191,6 @@ func TestInt64(t *testing.T) {
 }
 
 // Tests for Int32 functions
-func TestInt32Any(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    sql.NullInt32
-		expected driver.Value
-	}{
-		{
-			name:     "valid positive int32",
-			input:    sql.NullInt32{Int32: 123456, Valid: true},
-			expected: int32(123456),
-		},
-		{
-			name:     "valid negative int32",
-			input:    sql.NullInt32{Int32: -654321, Valid: true},
-			expected: int32(-654321),
-		},
-		{
-			name:     "valid zero",
-			input:    sql.NullInt32{Int32: 0, Valid: true},
-			expected: int32(0),
-		},
-		{
-			name:     "valid max int32",
-			input:    sql.NullInt32{Int32: math.MaxInt32, Valid: true},
-			expected: int32(math.MaxInt32),
-		},
-		{
-			name:     "valid min int32",
-			input:    sql.NullInt32{Int32: math.MinInt32, Valid: true},
-			expected: int32(math.MinInt32),
-		},
-		{
-			name:     "invalid null",
-			input:    sql.NullInt32{Int32: 0, Valid: false},
-			expected: nil,
-		},
-		{
-			name:     "invalid null with value",
-			input:    sql.NullInt32{Int32: 12345, Valid: false},
-			expected: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := Int32Any(tt.input)
-			if result != tt.expected {
-				t.Errorf("Int32Any(%v) = %v, want %v", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
 
 func TestInt32Nil(t *testing.T) {
 	tests := []struct {
@@ -448,58 +343,6 @@ func TestInt32(t *testing.T) {
 }
 
 // Tests for Int16 functions
-func TestInt16Any(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    sql.NullInt16
-		expected driver.Value
-	}{
-		{
-			name:     "valid positive int16",
-			input:    sql.NullInt16{Int16: 12345, Valid: true},
-			expected: int16(12345),
-		},
-		{
-			name:     "valid negative int16",
-			input:    sql.NullInt16{Int16: -6543, Valid: true},
-			expected: int16(-6543),
-		},
-		{
-			name:     "valid zero",
-			input:    sql.NullInt16{Int16: 0, Valid: true},
-			expected: int16(0),
-		},
-		{
-			name:     "valid max int16",
-			input:    sql.NullInt16{Int16: math.MaxInt16, Valid: true},
-			expected: int16(math.MaxInt16),
-		},
-		{
-			name:     "valid min int16",
-			input:    sql.NullInt16{Int16: math.MinInt16, Valid: true},
-			expected: int16(math.MinInt16),
-		},
-		{
-			name:     "invalid null",
-			input:    sql.NullInt16{Int16: 0, Valid: false},
-			expected: nil,
-		},
-		{
-			name:     "invalid null with value",
-			input:    sql.NullInt16{Int16: 123, Valid: false},
-			expected: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := Int16Any(tt.input)
-			if result != tt.expected {
-				t.Errorf("Int16Any(%v) = %v, want %v", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
 
 func TestInt16Nil(t *testing.T) {
 	tests := []struct {
@@ -700,12 +543,6 @@ func TestIntGenericTypeConstraints(t *testing.T) {
 }
 
 // Benchmark tests
-func BenchmarkInt64Any(b *testing.B) {
-	nullInt := sql.NullInt64{Int64: 123456789, Valid: true}
-	for i := 0; i < b.N; i++ {
-		Int64Any(nullInt)
-	}
-}
 
 func BenchmarkInt64Nil(b *testing.B) {
 	nullInt := sql.NullInt64{Int64: 123456789, Valid: true}
@@ -720,13 +557,6 @@ func BenchmarkInt64(b *testing.B) {
 	}
 }
 
-func BenchmarkInt32Any(b *testing.B) {
-	nullInt := sql.NullInt32{Int32: 123456, Valid: true}
-	for i := 0; i < b.N; i++ {
-		Int32Any(nullInt)
-	}
-}
-
 func BenchmarkInt32Nil(b *testing.B) {
 	nullInt := sql.NullInt32{Int32: 123456, Valid: true}
 	for i := 0; i < b.N; i++ {
@@ -737,13 +567,6 @@ func BenchmarkInt32Nil(b *testing.B) {
 func BenchmarkInt32(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Int32(int32(123456))
-	}
-}
-
-func BenchmarkInt16Any(b *testing.B) {
-	nullInt := sql.NullInt16{Int16: 12345, Valid: true}
-	for i := 0; i < b.N; i++ {
-		Int16Any(nullInt)
 	}
 }
 

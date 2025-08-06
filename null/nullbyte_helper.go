@@ -2,7 +2,6 @@ package null
 
 import (
 	"database/sql"
-	"database/sql/driver"
 )
 
 // byteConstraint is a constraint interface that allows either byte or *byte types.
@@ -10,30 +9,6 @@ import (
 // to byte values in a type-safe manner.
 type byteConstraint interface {
 	byte | *byte
-}
-
-// ByteAny converts a sql.NullByte to a driver.Value for database operations.
-// This function is typically used when you need to pass a nullable byte value
-// to database driver operations.
-//
-// Parameters:
-//   - nullBool (sql.NullByte): The nullable byte value to convert.
-//
-// Returns:
-//   - driver.Value: The byte value if valid, or nil if the NullByte is invalid/null.
-//
-// Example:
-//
-//	nullByte := sql.NullByte{Byte: 65, Valid: true}
-//	value := ByteAny(nullByte) // Returns: 65
-//
-//	invalidByte := sql.NullByte{Byte: 0, Valid: false}
-//	value := ByteAny(invalidByte) // Returns: nil
-func ByteAny(nullBool sql.NullByte) driver.Value {
-	if !nullBool.Valid {
-		return nil
-	}
-	return nullBool.Byte
 }
 
 // ByteNil converts a sql.NullByte to a pointer to byte (*byte).

@@ -2,47 +2,8 @@ package null
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"testing"
 )
-
-func TestBoolAny(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    sql.NullBool
-		expected driver.Value
-	}{
-		{
-			name:     "valid true",
-			input:    sql.NullBool{Bool: true, Valid: true},
-			expected: true,
-		},
-		{
-			name:     "valid false",
-			input:    sql.NullBool{Bool: false, Valid: true},
-			expected: false,
-		},
-		{
-			name:     "invalid null",
-			input:    sql.NullBool{Bool: false, Valid: false},
-			expected: nil,
-		},
-		{
-			name:     "invalid null with true value",
-			input:    sql.NullBool{Bool: true, Valid: false},
-			expected: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := BoolAny(tt.input)
-			if result != tt.expected {
-				t.Errorf("BoolAny(%v) = %v, want %v", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
 
 func TestBoolNil(t *testing.T) {
 	tests := []struct {
@@ -157,12 +118,6 @@ func TestBoolGenericTypeConstraints(t *testing.T) {
 }
 
 // Benchmark tests
-func BenchmarkBoolAny(b *testing.B) {
-	nullBool := sql.NullBool{Bool: true, Valid: true}
-	for i := 0; i < b.N; i++ {
-		BoolAny(nullBool)
-	}
-}
 
 func BenchmarkBoolNil(b *testing.B) {
 	nullBool := sql.NullBool{Bool: true, Valid: true}

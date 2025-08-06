@@ -2,7 +2,6 @@ package null
 
 import (
 	"database/sql"
-	"database/sql/driver"
 )
 
 // stringConstraint is a constraint interface that allows either string or *string types.
@@ -10,30 +9,6 @@ import (
 // to string values in a type-safe manner.
 type stringConstraint interface {
 	string | *string
-}
-
-// StringAny converts a sql.NullString to a driver.Value for database operations.
-// This function is typically used when you need to pass a nullable string value
-// to database driver operations.
-//
-// Parameters:
-//   - nullString (sql.NullString): The nullable string value to convert.
-//
-// Returns:
-//   - driver.Value: The string value if valid, or nil if the NullString is invalid/null.
-//
-// Example:
-//
-//	nullString := sql.NullString{String: "hello", Valid: true}
-//	value := StringAny(nullString) // Returns: "hello"
-//
-//	invalidString := sql.NullString{String: "", Valid: false}
-//	value := StringAny(invalidString) // Returns: nil
-func StringAny(nullString sql.NullString) driver.Value {
-	if !nullString.Valid {
-		return nil
-	}
-	return nullString.String
 }
 
 // StringNil converts a sql.NullString to a pointer to string (*string).

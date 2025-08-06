@@ -2,72 +2,9 @@ package null
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"testing"
 	"time"
 )
-
-func TestTimeAny(t *testing.T) {
-	now := time.Now()
-	utc := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
-	zeroTime := time.Time{}
-
-	tests := []struct {
-		name     string
-		input    sql.NullTime
-		expected driver.Value
-	}{
-		{
-			name:     "valid current time",
-			input:    sql.NullTime{Time: now, Valid: true},
-			expected: now,
-		},
-		{
-			name:     "valid UTC time",
-			input:    sql.NullTime{Time: utc, Valid: true},
-			expected: utc,
-		},
-		{
-			name:     "valid zero time",
-			input:    sql.NullTime{Time: zeroTime, Valid: true},
-			expected: zeroTime,
-		},
-		{
-			name:     "valid unix epoch",
-			input:    sql.NullTime{Time: time.Unix(0, 0), Valid: true},
-			expected: time.Unix(0, 0),
-		},
-		{
-			name:     "valid far future",
-			input:    sql.NullTime{Time: time.Date(2099, 12, 31, 23, 59, 59, 999999999, time.UTC), Valid: true},
-			expected: time.Date(2099, 12, 31, 23, 59, 59, 999999999, time.UTC),
-		},
-		{
-			name:     "valid far past",
-			input:    sql.NullTime{Time: time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC), Valid: true},
-			expected: time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC),
-		},
-		{
-			name:     "invalid null",
-			input:    sql.NullTime{Time: zeroTime, Valid: false},
-			expected: nil,
-		},
-		{
-			name:     "invalid null with time value",
-			input:    sql.NullTime{Time: now, Valid: false},
-			expected: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := TimeAny(tt.input)
-			if result != tt.expected {
-				t.Errorf("TimeAny(%v) = %v, want %v", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
 
 func TestTimeNil(t *testing.T) {
 	now := time.Now()
@@ -360,12 +297,6 @@ func TestTimeEdgeCases(t *testing.T) {
 }
 
 // Benchmark tests
-func BenchmarkTimeAny(b *testing.B) {
-	nullTime := sql.NullTime{Time: time.Now(), Valid: true}
-	for i := 0; i < b.N; i++ {
-		TimeAny(nullTime)
-	}
-}
 
 func BenchmarkTimeNil(b *testing.B) {
 	nullTime := sql.NullTime{Time: time.Now(), Valid: true}

@@ -2,68 +2,9 @@ package null
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"strings"
 	"testing"
 )
-
-func TestStringAny(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    sql.NullString
-		expected driver.Value
-	}{
-		{
-			name:     "valid non-empty string",
-			input:    sql.NullString{String: "hello", Valid: true},
-			expected: "hello",
-		},
-		{
-			name:     "valid empty string",
-			input:    sql.NullString{String: "", Valid: true},
-			expected: "",
-		},
-		{
-			name:     "valid string with spaces",
-			input:    sql.NullString{String: "  hello world  ", Valid: true},
-			expected: "  hello world  ",
-		},
-		{
-			name:     "valid string with special characters",
-			input:    sql.NullString{String: "hello\nworld\t!", Valid: true},
-			expected: "hello\nworld\t!",
-		},
-		{
-			name:     "valid unicode string",
-			input:    sql.NullString{String: "こんにちは世界", Valid: true},
-			expected: "こんにちは世界",
-		},
-		{
-			name:     "valid long string",
-			input:    sql.NullString{String: strings.Repeat("a", 1000), Valid: true},
-			expected: strings.Repeat("a", 1000),
-		},
-		{
-			name:     "invalid null",
-			input:    sql.NullString{String: "", Valid: false},
-			expected: nil,
-		},
-		{
-			name:     "invalid null with value",
-			input:    sql.NullString{String: "hello", Valid: false},
-			expected: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := StringAny(tt.input)
-			if result != tt.expected {
-				t.Errorf("StringAny(%v) = %v, want %v", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
 
 func TestStringNil(t *testing.T) {
 	tests := []struct {
@@ -349,12 +290,6 @@ func TestStringEdgeCases(t *testing.T) {
 }
 
 // Benchmark tests
-func BenchmarkStringAny(b *testing.B) {
-	nullString := sql.NullString{String: "hello world", Valid: true}
-	for i := 0; i < b.N; i++ {
-		StringAny(nullString)
-	}
-}
 
 func BenchmarkStringNil(b *testing.B) {
 	nullString := sql.NullString{String: "hello world", Valid: true}

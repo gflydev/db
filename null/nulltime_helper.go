@@ -2,7 +2,6 @@ package null
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"time"
 )
 
@@ -11,31 +10,6 @@ import (
 // to time.Time values in a type-safe manner.
 type timeConstraint interface {
 	time.Time | *time.Time
-}
-
-// TimeAny converts a sql.NullTime to a driver.Value for database operations.
-// This function is typically used when you need to pass a nullable time.Time value
-// to database driver operations.
-//
-// Parameters:
-//   - nullTime (sql.NullTime): The nullable time.Time value to convert.
-//
-// Returns:
-//   - driver.Value: The time.Time value if valid, or nil if the NullTime is invalid/null.
-//
-// Example:
-//
-//	now := time.Now()
-//	nullTime := sql.NullTime{Time: now, Valid: true}
-//	value := TimeAny(nullTime) // Returns: now
-//
-//	invalidTime := sql.NullTime{Time: time.Time{}, Valid: false}
-//	value := TimeAny(invalidTime) // Returns: nil
-func TimeAny(nullTime sql.NullTime) driver.Value {
-	if !nullTime.Valid {
-		return nil
-	}
-	return nullTime.Time
 }
 
 // TimeNil converts a sql.NullTime to a pointer to time.Time (*time.Time).
