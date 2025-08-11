@@ -118,8 +118,13 @@ import (
 //   - The model type T must have proper database tags
 //   - Thread-safe and can be called concurrently
 //   - Automatically handles database connection management
-func GetModelByID[T any](value any) (*T, error) {
-	return GetModelBy[T]("id", value)
+func GetModelByID[T any](value any, fields ...string) (*T, error) {
+	idField := "id"
+	if len(fields) > 0 {
+		idField = fields[0]
+	}
+
+	return GetModelBy[T](idField, value)
 }
 
 // GetModelBy allows filtering records of type T from the database
