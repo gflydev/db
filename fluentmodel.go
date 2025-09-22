@@ -2,10 +2,12 @@ package db
 
 import (
 	"database/sql"
+	"github.com/gflydev/core/errors"
 	"github.com/gflydev/core/log"
 	"github.com/gflydev/core/utils"
 	qb "github.com/jivegroup/fluentsql"
 	"github.com/jmoiron/sqlx"
+	"reflect"
 )
 
 // ====================================================================
@@ -981,4 +983,113 @@ func (db *DBModel) Commit() error {
 
 	// Return nil if there’s no active transaction.
 	return nil
+}
+
+// ToQueryBuilder converts the DBModel to a QueryBuilder for use as a subquery.
+// This method builds a QueryBuilder from the current DBModel's state without executing it.
+//
+// Returns:
+//   - *qb.QueryBuilder: A QueryBuilder instance representing the current DBModel's query
+//   - error: An error if the model is not properly configured
+//
+// Example:
+//
+//	subquery := Instance().Model(&User{}).Where("status", Eq, "active")
+//	queryBuilder, err := subquery.ToQueryBuilder()
+//	if err != nil {
+//	    return err
+//	}
+//	// Use queryBuilder as a subquery value in conditions
+func (db *DBModel) ToQueryBuilder() (*qb.QueryBuilder, error) {
+	// Handle raw SQL case
+	if db.raw.sqlStr != "" {
+		// Note: fluentsql doesn't have a Raw method, so we'll need to handle this differently
+		// For now, return an error for raw SQL subqueries
+		return nil, errors.New("Raw SQL subqueries are not supported yet")
+	}
+
+	// Validate that model is set
+	if db.model == nil {
+		return nil, errors.New("Model must be set before converting to QueryBuilder")
+	}
+
+	// Get the type of model and create a table representation
+	var table *Table
+	modelType := reflect.TypeOf(db.model)
+	modelValue := reflect.ValueOf(db.model)
+
+	// Handle pointer to struct
+	if modelType.Kind() == reflect.Ptr {
+		modelType = modelType.Elem()
+		modelValue = modelValue.Elem()
+	}
+
+	table = processModel(modelType, modelValue, NewTable())
+
+	// Define the columns to query
+	var selectColumns []any
+	if len(db.selectStatement.Columns) > 0 {
+		selectColumns = db.selectStatement.Columns
+	} else {
+		selectColumns = []any{"*"}
+	}
+
+	// Create query builder
+	queryBuilder := qb.QueryInstance().
+		Select(selectColumns...).
+		From(table.Name)
+
+	// Build WHERE condition from the condition list
+	for _, condition := range db.whereStatement.Conditions {
+		// Sub-conditions
+		switch {
+		case len(condition.Group) > 0:
+			// Append conditions from a group to query builder
+			queryBuilder.WhereGroup(func(whereBuilder qb.WhereBuilder) *qb.WhereBuilder {
+				whereBuilder.WhereCondition(condition.Group...)
+				return &whereBuilder
+			})
+		case condition.AndOr == And:
+			// Add Where AND condition
+			queryBuilder.Where(condition.Field, condition.Opt, condition.Value)
+		case condition.AndOr == Or:
+			// Add Where OR condition
+			queryBuilder.WhereOr(condition.Field, condition.Opt, condition.Value)
+		}
+	}
+
+	// Build WHERE condition from model's data in the table
+	table.whereFromModel(queryBuilder)
+
+	// Build JOIN clause
+	for _, joinItem := range db.joinStatement.Items {
+		queryBuilder.Join(joinItem.Join, joinItem.Table, joinItem.Condition)
+	}
+
+	// Build GROUP BY clause
+	if len(db.groupByStatement.Items) > 0 {
+		queryBuilder.GroupBy(db.groupByStatement.Items...)
+	}
+
+	// Build HAVING clause
+	for _, condition := range db.havingStatement.Conditions {
+		queryBuilder.Having(condition.Field, condition.Opt, condition.Value)
+	}
+
+	// Build LIMIT clause
+	if db.limitStatement.Limit > 0 {
+		queryBuilder.Limit(db.limitStatement.Limit, db.limitStatement.Offset)
+	}
+
+	// Build FETCH clause
+	if db.fetchStatement.Fetch > 0 {
+		queryBuilder.Fetch(db.fetchStatement.Offset, db.fetchStatement.Fetch)
+	}
+
+	// Build ORDER BY clause
+	for _, orderItem := range db.orderByStatement.Items {
+		queryBuilder.OrderBy(orderItem.Field, orderItem.Direction)
+	}
+
+	return queryBuilder, nil
 }
