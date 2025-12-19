@@ -9,7 +9,7 @@ replace (
 	github.com/gflydev/db/mysql => ../
 )
 
-require github.com/gflydev/core v1.17.2
+require github.com/gflydev/core v1.17.7
 
 require github.com/gflydev/view/pongo v1.0.3
 
@@ -39,7 +39,7 @@ require (
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/tinylib/msgp v1.3.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.64.0 // indirect
-	golang.org/x/crypto v0.40.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
+	github.com/valyala/fasthttp v1.66.0 // indirect
+	golang.org/x/crypto v0.42.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 )
