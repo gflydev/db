@@ -582,3 +582,209 @@ func BenchmarkInt16(b *testing.B) {
 		Int16(int16(12345))
 	}
 }
+
+// Tests for Int64NilInt, Int32NilInt, Int16NilInt functions
+
+func TestInt64NilInt(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    sql.NullInt64
+		expected *int
+	}{
+		{
+			name:     "valid positive int64",
+			input:    sql.NullInt64{Int64: 123456789, Valid: true},
+			expected: func() *int { i := int(123456789); return &i }(),
+		},
+		{
+			name:     "valid negative int64",
+			input:    sql.NullInt64{Int64: -987654321, Valid: true},
+			expected: func() *int { i := int(-987654321); return &i }(),
+		},
+		{
+			name:     "valid zero",
+			input:    sql.NullInt64{Int64: 0, Valid: true},
+			expected: func() *int { i := int(0); return &i }(),
+		},
+		{
+			name:     "valid max int64 (may truncate on 32-bit systems)",
+			input:    sql.NullInt64{Int64: math.MaxInt64, Valid: true},
+			expected: func() *int { i := int(math.MaxInt64); return &i }(),
+		},
+		{
+			name:     "valid min int64 (may truncate on 32-bit systems)",
+			input:    sql.NullInt64{Int64: math.MinInt64, Valid: true},
+			expected: func() *int { i := int(math.MinInt64); return &i }(),
+		},
+		{
+			name:     "invalid null",
+			input:    sql.NullInt64{Int64: 0, Valid: false},
+			expected: nil,
+		},
+		{
+			name:     "invalid null with value",
+			input:    sql.NullInt64{Int64: 12345, Valid: false},
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Int64NilInt(tt.input)
+			if tt.expected == nil {
+				if result != nil {
+					t.Errorf("Int64NilInt(%v) = %v, want nil", tt.input, result)
+				}
+			} else {
+				if result == nil {
+					t.Errorf("Int64NilInt(%v) = nil, want %v", tt.input, *tt.expected)
+				} else if *result != *tt.expected {
+					t.Errorf("Int64NilInt(%v) = %v, want %v", tt.input, *result, *tt.expected)
+				}
+			}
+		})
+	}
+}
+
+func TestInt32NilInt(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    sql.NullInt32
+		expected *int
+	}{
+		{
+			name:     "valid positive int32",
+			input:    sql.NullInt32{Int32: 123456, Valid: true},
+			expected: func() *int { i := int(123456); return &i }(),
+		},
+		{
+			name:     "valid negative int32",
+			input:    sql.NullInt32{Int32: -654321, Valid: true},
+			expected: func() *int { i := int(-654321); return &i }(),
+		},
+		{
+			name:     "valid zero",
+			input:    sql.NullInt32{Int32: 0, Valid: true},
+			expected: func() *int { i := int(0); return &i }(),
+		},
+		{
+			name:     "valid max int32",
+			input:    sql.NullInt32{Int32: math.MaxInt32, Valid: true},
+			expected: func() *int { i := int(math.MaxInt32); return &i }(),
+		},
+		{
+			name:     "valid min int32",
+			input:    sql.NullInt32{Int32: math.MinInt32, Valid: true},
+			expected: func() *int { i := int(math.MinInt32); return &i }(),
+		},
+		{
+			name:     "invalid null",
+			input:    sql.NullInt32{Int32: 0, Valid: false},
+			expected: nil,
+		},
+		{
+			name:     "invalid null with value",
+			input:    sql.NullInt32{Int32: 12345, Valid: false},
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Int32NilInt(tt.input)
+			if tt.expected == nil {
+				if result != nil {
+					t.Errorf("Int32NilInt(%v) = %v, want nil", tt.input, result)
+				}
+			} else {
+				if result == nil {
+					t.Errorf("Int32NilInt(%v) = nil, want %v", tt.input, *tt.expected)
+				} else if *result != *tt.expected {
+					t.Errorf("Int32NilInt(%v) = %v, want %v", tt.input, *result, *tt.expected)
+				}
+			}
+		})
+	}
+}
+
+func TestInt16NilInt(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    sql.NullInt16
+		expected *int
+	}{
+		{
+			name:     "valid positive int16",
+			input:    sql.NullInt16{Int16: 12345, Valid: true},
+			expected: func() *int { i := int(12345); return &i }(),
+		},
+		{
+			name:     "valid negative int16",
+			input:    sql.NullInt16{Int16: -6543, Valid: true},
+			expected: func() *int { i := int(-6543); return &i }(),
+		},
+		{
+			name:     "valid zero",
+			input:    sql.NullInt16{Int16: 0, Valid: true},
+			expected: func() *int { i := int(0); return &i }(),
+		},
+		{
+			name:     "valid max int16",
+			input:    sql.NullInt16{Int16: math.MaxInt16, Valid: true},
+			expected: func() *int { i := int(math.MaxInt16); return &i }(),
+		},
+		{
+			name:     "valid min int16",
+			input:    sql.NullInt16{Int16: math.MinInt16, Valid: true},
+			expected: func() *int { i := int(math.MinInt16); return &i }(),
+		},
+		{
+			name:     "invalid null",
+			input:    sql.NullInt16{Int16: 0, Valid: false},
+			expected: nil,
+		},
+		{
+			name:     "invalid null with value",
+			input:    sql.NullInt16{Int16: 12345, Valid: false},
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Int16NilInt(tt.input)
+			if tt.expected == nil {
+				if result != nil {
+					t.Errorf("Int16NilInt(%v) = %v, want nil", tt.input, result)
+				}
+			} else {
+				if result == nil {
+					t.Errorf("Int16NilInt(%v) = nil, want %v", tt.input, *tt.expected)
+				} else if *result != *tt.expected {
+					t.Errorf("Int16NilInt(%v) = %v, want %v", tt.input, *result, *tt.expected)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkInt64NilInt(b *testing.B) {
+	nullInt := sql.NullInt64{Int64: 123456789, Valid: true}
+	for i := 0; i < b.N; i++ {
+		Int64NilInt(nullInt)
+	}
+}
+
+func BenchmarkInt32NilInt(b *testing.B) {
+	nullInt := sql.NullInt32{Int32: 123456, Valid: true}
+	for i := 0; i < b.N; i++ {
+		Int32NilInt(nullInt)
+	}
+}
+
+func BenchmarkInt16NilInt(b *testing.B) {
+	nullInt := sql.NullInt16{Int16: 12345, Valid: true}
+	for i := 0; i < b.N; i++ {
+		Int16NilInt(nullInt)
+	}
+}
