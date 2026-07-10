@@ -247,24 +247,36 @@ func setValue(model any, key string, data any) (err error) {
 func toStr(data interface{}) (res string) {
 	// Convert the input value to a string based on its type
 	switch v := data.(type) {
+	case bool:
+		res = strconv.FormatBool(v)
 	case float64:
-		res = strconv.FormatFloat(data.(float64), 'f', 6, 64)
+		res = strconv.FormatFloat(v, 'f', 6, 64)
 	case float32:
-		res = strconv.FormatFloat(float64(data.(float32)), 'f', 6, 32)
+		res = strconv.FormatFloat(float64(v), 'f', 6, 32)
 	case int:
-		res = strconv.FormatInt(int64(data.(int)), 10)
+		res = strconv.FormatInt(int64(v), 10)
+	case int8:
+		res = strconv.FormatInt(int64(v), 10)
+	case int16:
+		res = strconv.FormatInt(int64(v), 10)
+	case int32:
+		res = strconv.FormatInt(int64(v), 10)
 	case int64:
-		res = strconv.FormatInt(data.(int64), 10)
+		res = strconv.FormatInt(v, 10)
 	case uint:
-		res = strconv.FormatUint(uint64(data.(uint)), 10)
-	case uint64:
-		res = strconv.FormatUint(data.(uint64), 10)
+		res = strconv.FormatUint(uint64(v), 10)
+	case uint8:
+		res = strconv.FormatUint(uint64(v), 10)
+	case uint16:
+		res = strconv.FormatUint(uint64(v), 10)
 	case uint32:
-		res = strconv.FormatUint(uint64(data.(uint32)), 10)
+		res = strconv.FormatUint(uint64(v), 10)
+	case uint64:
+		res = strconv.FormatUint(v, 10)
 	case json.Number:
-		res = data.(json.Number).String()
+		res = v.String()
 	case string:
-		res = data.(string)
+		res = v
 	case []byte:
 		res = string(v)
 	default:

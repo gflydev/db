@@ -187,10 +187,15 @@ func (db *DBModel) Get(model any, getType GetOne) (err error) {
 	case getType == GetFirst && orderByField != "":
 		orderByDir = Asc
 	case getType == TakeOne: // Random order by field and direction
-		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(table.Columns)-1)))
-		orderByField = table.Columns[n.Int64()].Name
+		// Pick a random column across the full range [0, len). Using len-1 as the
+		// bound both skipped the last column and panicked when a model had a single
+		// column (rand.Int requires a positive bound).
+		if len(table.Columns) > 0 {
+			n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(table.Columns))))
+			orderByField = table.Columns[n.Int64()].Name
+		}
 
-		n, _ = rand.Int(rand.Reader, big.NewInt(10))
+		n, _ := rand.Int(rand.Reader, big.NewInt(10))
 		if n.Int64()%2 == 1 {
 			orderByDir = Asc
 		} else {
