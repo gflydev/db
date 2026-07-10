@@ -96,12 +96,14 @@ func (db *DBModel) Delete(model any) error {
 	// Delete using raw SQL if it's set.
 	if db.raw.sqlStr != "" {
 		err = db.execRaw(db.raw.sqlStr, db.raw.args)
-		if err != nil {
-			return err
-		}
 
 		// Reset fluent model builder.
 		db.reset()
+
+		// Return here so the raw statement is not followed by an unintended
+		// model-based delete (which would either run a second DELETE or report
+		// a spurious "missing WHERE condition" error after a successful raw run).
+		return err
 	}
 
 	var table *Table         // Represents the table corresponding to the model.
