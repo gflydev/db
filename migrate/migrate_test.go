@@ -219,6 +219,53 @@ func TestMigrator_Down_RecordedMigrationHasNoFiles_ReturnsError(t *testing.T) {
 	}
 }
 
+func TestMigrator_Status_RecordWithNoMatchingFile_ReportedAsFileMissing(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New: %v", err)
+	}
+	defer db.Close()
+
+	c1, _ := checksum(filepath.Join("testdata", "valid", "000001_create_users.up.sql"))
+
+	mock.ExpectExec(`CREATE TABLE IF NOT EXISTS migrations`).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectQuery(`SELECT migration, batch, status`).WillReturnRows(emptyRecordRows().
+		AddRow("000001_create_users", 1, "up", 1, c1, nil, nil).
+		AddRow("000099_deleted_from_disk", 3, "down", 1, "whatever", nil, nil))
+
+	m := newTestMigrator(db, filepath.Join("testdata", "valid"))
+	rows, err := m.Status(context.Background())
+	if err != nil {
+		t.Fatalf("Status returned error: %v", err)
+	}
+
+	var orphan *StatusRow
+	for i := range rows {
+		if rows[i].Migration.Name == "000099_deleted_from_disk" {
+			orphan = &rows[i]
+		}
+	}
+	if orphan == nil {
+		t.Fatalf("expected a row for 000099_deleted_from_disk, got rows: %+v", rows)
+	}
+	if !orphan.FileMissing {
+		t.Fatal("expected FileMissing to be true for a record with no matching file on disk")
+	}
+	if orphan.Migration.Version != "000099" {
+		t.Fatalf("got version %q, want %q (parsed from the migration name)", orphan.Migration.Version, "000099")
+	}
+	if orphan.Record == nil || orphan.Record.Status != "down" {
+		t.Fatalf("expected the orphan's Record to carry its real status, got %+v", orphan.Record)
+	}
+
+	// The migration that DOES have a file on disk must not be flagged.
+	for _, row := range rows {
+		if row.Migration.Name == "000001_create_users" && row.FileMissing {
+			t.Fatal("000001_create_users has a file on disk and must not be reported as FileMissing")
+		}
+	}
+}
+
 func TestMigrator_Baseline_EmptyTable_MarksFilesWithoutRunningSQL(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {

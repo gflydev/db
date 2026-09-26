@@ -69,6 +69,10 @@ Connection settings are read from `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`
 - Rolling back a migration keeps its tracking row (status flips to `down`, `run_count` and
   `batch` stay as history) rather than deleting it, so `run_count` survives repeated
   rollback/reapply cycles.
+- `--status` also reports any tracking-table row whose `.sql` files are no longer in the
+  migrations directory (deleted or renamed after it ran) as `FILE MISSING` — without this check
+  such a row would simply vanish from every command's view, staying in the table forever with no
+  way to roll it back until the files are restored.
 
 ## Testing
 

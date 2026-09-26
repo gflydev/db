@@ -102,6 +102,34 @@ func TestRunCLI_Status_PrintsOneLinePerMigration(t *testing.T) {
 	}
 }
 
+func TestRunCLI_Status_OrphanedRecord_ShowsFileMissingAndNote(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectExec(`CREATE TABLE IF NOT EXISTS migrations`).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectQuery(`SELECT migration, batch, status`).WillReturnRows(emptyRecordRows().
+		AddRow("000099_deleted_from_disk", 3, "down", 1, "whatever", nil, nil))
+
+	dialect := &fakeDialect{name: "fake", openFn: func() (*sql.DB, error) { return db, nil }}
+	var stdout bytes.Buffer
+	code := runCLI([]string{"--status"}, dialect, filepath.Join("testdata", "valid"), &stdout, &bytes.Buffer{})
+	if code != 0 {
+		t.Fatalf("got exit code %d, want 0; stdout: %s", code, stdout.String())
+	}
+	if !bytes.Contains(stdout.Bytes(), []byte("000099_deleted_from_disk")) {
+		t.Fatalf("expected the orphaned record's name in the table, got: %s", stdout.String())
+	}
+	if !bytes.Contains(stdout.Bytes(), []byte("FILE MISSING")) {
+		t.Fatalf("expected a FILE MISSING marker, got: %s", stdout.String())
+	}
+	if !bytes.Contains(stdout.Bytes(), []byte("Restore the files")) {
+		t.Fatalf("expected the explanatory note, got: %s", stdout.String())
+	}
+}
+
 func TestRunCLI_Up_NothingPending_PrintsNothingToDo(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {

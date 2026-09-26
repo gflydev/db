@@ -203,6 +203,10 @@ func selectRollbackTargets(records map[string]Record, all bool) []string {
 // one, or reported as pending if it doesn't. Unlike Up and Down, Status never fails on
 // ErrChecksumMismatch — it reports the mismatch per row (StatusRow.ChecksumMatches) instead of
 // refusing to run, since inspecting state should always be safe.
+//
+// It also reports every tracking-table row that has no matching file on disk anymore
+// (StatusRow.FileMissing) — Load itself simply never sees these names, so without this check
+// they would silently sit in the table forever, invisible to every other command.
 func (m *Migrator) Status(ctx context.Context) ([]StatusRow, error) {
 	rows := []StatusRow{}
 	err := m.withLock(ctx, func(conn *sql.Conn) error {
@@ -210,12 +214,44 @@ func (m *Migrator) Status(ctx context.Context) ([]StatusRow, error) {
 		if err != nil {
 			return err
 		}
+		onDisk := make(map[string]bool, len(migrations))
 		for _, mig := range migrations {
+			onDisk[mig.Name] = true
 			rows = append(rows, statusRowFor(mig, records))
 		}
+		rows = append(rows, orphanedRows(records, onDisk)...)
 		return nil
 	})
 	return rows, err
+}
+
+// orphanedRows returns a StatusRow, sorted by name, for every tracking-table record whose
+// migration name is not in onDisk — i.e. Load found no .sql files for it. Version is parsed
+// from the recorded name's leading 6 characters, matching every other migration's naming
+// convention; UpPath/DownPath are left empty since there is nothing on disk to point to.
+func orphanedRows(records map[string]Record, onDisk map[string]bool) []StatusRow {
+	var names []string
+	for name := range records {
+		if !onDisk[name] {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+
+	rows := make([]StatusRow, 0, len(names))
+	for _, name := range names {
+		rec := records[name]
+		version := name
+		if len(name) >= 6 {
+			version = name[:6]
+		}
+		rows = append(rows, StatusRow{
+			Migration:   Migration{Version: version, Name: name},
+			Record:      &rec,
+			FileMissing: true,
+		})
+	}
+	return rows
 }
 
 // statusRowFor builds mig's StatusRow from records, recomputing the on-disk checksum only when

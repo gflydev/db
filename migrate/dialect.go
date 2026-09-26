@@ -113,7 +113,15 @@ type Record struct {
 // StatusRow is one line of `db:migrate --status` output: a Migration joined with its Record,
 // if any, plus whether its on-disk checksum still matches what was recorded.
 type StatusRow struct {
-	Migration       Migration
-	Record          *Record // nil if never applied
-	ChecksumMatches bool    // meaningless (true) if Record is nil
+	Migration Migration
+	// Record is nil if Migration has never been applied.
+	Record *Record
+	// ChecksumMatches is meaningless (true) if Record is nil; see Record.Checksum.
+	ChecksumMatches bool
+	// FileMissing is true when Record is non-nil but its .sql files are no longer present in
+	// the migrations directory — e.g. deleted or renamed after the migration ran. Migration's
+	// UpPath/DownPath are empty in that case; only Version (parsed from the tracking table's
+	// migration name) and Name are populated. Such a row can never be rolled back by Down until
+	// its files are restored (see ErrFilesMissing).
+	FileMissing bool
 }

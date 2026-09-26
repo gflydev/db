@@ -150,17 +150,24 @@ func printResult(w io.Writer, infinitive, pastTense string, dryRun bool, result 
 
 // printStatus renders rows as a tab-aligned table: one line per migration, showing its version,
 // name, status (falling back to "pending" for a migration never applied), batch, run count, and
-// whether its on-disk checksum still matches ("ok", "MISMATCH", or "-" if never applied).
+// whether its on-disk checksum still matches ("ok", "MISMATCH", "FILE MISSING", or "-" if never
+// applied). A row with FileMissing prints a trailing note explaining what that means and why
+// Down can't touch it, since "FILE MISSING" alone isn't self-explanatory in a status table.
 func printStatus(w io.Writer, rows []StatusRow) {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
 	fmt.Fprintln(tw, "VERSION\tNAME\tSTATUS\tBATCH\tRUNS\tCHECKSUM")
+	hasFileMissing := false
 	for _, row := range rows {
 		status, batch, runs, sum := "pending", "-", "0", "-"
 		if row.Record != nil {
 			status = row.Record.Status
 			batch = fmt.Sprintf("%d", row.Record.Batch)
 			runs = fmt.Sprintf("%d", row.Record.RunCount)
-			if row.Record.Status == StatusUp {
+			switch {
+			case row.FileMissing:
+				sum = "FILE MISSING"
+				hasFileMissing = true
+			case row.Record.Status == StatusUp:
 				sum = "ok"
 				if !row.ChecksumMatches {
 					sum = "MISMATCH"
@@ -170,4 +177,8 @@ func printStatus(w io.Writer, rows []StatusRow) {
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", row.Migration.Version, row.Migration.Name, status, batch, runs, sum)
 	}
 	tw.Flush()
+	if hasFileMissing {
+		fmt.Fprintln(w, "\nFILE MISSING: recorded in the migrations table but its .sql files are no longer in the")
+		fmt.Fprintln(w, "migrations directory (deleted or renamed after it ran). Restore the files to roll it back.")
+	}
 }
