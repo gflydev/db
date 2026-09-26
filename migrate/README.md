@@ -52,6 +52,7 @@ Connection settings are read from `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`
 ./build/artisan db:migrate --status           # show every migration's state
 ./build/artisan db:migrate --dry-run          # combine with the above: print, don't execute
 ./build/artisan db:migrate --baseline=000023  # mark files up to 000023 as already applied
+./build/artisan db:migrate help               # same as -h/--help: print the flag list and examples above
 ```
 
 ## Design notes

@@ -9,6 +9,37 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 )
 
+func TestRunCLI_BareHelpArgument_PrintsHelpAndExitsZero(t *testing.T) {
+	// "help" has no leading dash, so the flag package would otherwise silently treat it as a
+	// non-flag argument and fall through to the default (apply) action — this is the exact
+	// case a user typing `db:migrate help` hits, and RunCLI must special-case it before ever
+	// reaching fs.Parse.
+	var stdout, stderr bytes.Buffer
+	code := runCLI([]string{"help"}, &fakeDialect{name: "fake"}, "testdata/valid", &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("got exit code %d, want 0", code)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected nothing on stderr, got: %s", stderr.String())
+	}
+	for _, want := range []string{"--all", "--down", "--status", "--baseline", "--force"} {
+		if !bytes.Contains(stdout.Bytes(), []byte(want)) {
+			t.Fatalf("expected help text to mention %q, got: %s", want, stdout.String())
+		}
+	}
+}
+
+func TestRunCLI_DashDashHelpFlag_PrintsHelpAndExitsZero(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := runCLI([]string{"--help"}, &fakeDialect{name: "fake"}, "testdata/valid", &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("got exit code %d, want 0", code)
+	}
+	if !bytes.Contains(stdout.Bytes(), []byte("--baseline")) {
+		t.Fatalf("expected help text on stdout, got: %s", stdout.String())
+	}
+}
+
 func TestRunCLI_UnknownFlag_ReturnsOneAndPrintsUsage(t *testing.T) {
 	var stderr bytes.Buffer
 	code := runCLI([]string{"--nonsense"}, &fakeDialect{name: "fake"}, "testdata/valid", &bytes.Buffer{}, &stderr)

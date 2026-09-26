@@ -2,12 +2,43 @@ package migrate
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"text/tabwriter"
 )
+
+// helpText is printed by RunCLI's "help" argument, its -h/--help flag, and any flag-parsing
+// error (so a typo lands on a full explanation, not just a one-line flag error). Keep it in
+// sync with the flag descriptions below and with the package README's own command table.
+const helpText = `db:migrate applies or rolls back the *.sql files in a migrations directory
+(golang-migrate's NNNNNN_name.up.sql / .down.sql convention), tracking each file's state in a
+"migrations" table it manages itself.
+
+Usage:
+  db:migrate [flags]
+
+Flags:
+  (none)                Apply the single next pending migration.
+  --all                 Apply every pending migration (with --down: roll back the whole latest batch).
+  --down                Roll back instead of applying.
+  --status              Print every migration's state and exit.
+  --dry-run             Print what would run without executing it.
+  --baseline=VERSION    Mark every migration up to VERSION as already applied, without running SQL.
+  --force               Overwrite an existing baseline, or proceed past a checksum mismatch.
+  -h, --help            Show this help.
+
+Examples:
+  db:migrate                     Apply the next pending migration
+  db:migrate --all               Apply every pending migration
+  db:migrate --down              Roll back the most recently applied migration
+  db:migrate --down --all        Roll back every migration in the latest batch
+  db:migrate --status            Show every migration's state
+  db:migrate --dry-run --all     Show which migrations --all would apply, without running them
+  db:migrate --baseline=000023   Mark 000001..000023 as already applied, without running SQL
+`
 
 // RunCLI parses args (everything after "db:migrate" on the command line — see the package
 // README for the full flag list), runs the requested operation against dialect's database, and
@@ -23,8 +54,17 @@ func RunCLI(args []string, dialect Dialect, dir string) int {
 // runCLI is RunCLI with stdout/stderr as parameters instead of the real os.Stdout/os.Stderr, so
 // tests can capture output without touching the process's real streams.
 func runCLI(args []string, dialect Dialect, dir string, stdout, stderr io.Writer) int {
+	// "help" has no leading dash, so the flag package below would otherwise treat it as a bare
+	// positional argument and silently fall through to the default (apply) action instead of
+	// explaining anything — handle it before fs.Parse ever sees it.
+	if len(args) > 0 && args[0] == "help" {
+		fmt.Fprint(stdout, helpText)
+		return 0
+	}
+
 	fs := flag.NewFlagSet("db:migrate", flag.ContinueOnError)
-	fs.SetOutput(stderr)
+	fs.SetOutput(stderr)                               // a real parse error (e.g. an unknown flag) prints its own line here
+	fs.Usage = func() { fmt.Fprint(stdout, helpText) } // -h/--help itself always goes to stdout
 	down := fs.Bool("down", false, "roll back instead of applying")
 	all := fs.Bool("all", false, "apply/roll back every pending file (default: exactly one)")
 	status := fs.Bool("status", false, "print every migration's state and exit")
@@ -33,6 +73,9 @@ func runCLI(args []string, dialect Dialect, dir string, stdout, stderr io.Writer
 	force := fs.Bool("force", false, "overwrite an existing baseline, or proceed past a checksum mismatch")
 
 	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return 0
+		}
 		return 1
 	}
 	if *baseline != "" && (*down || *all) {
