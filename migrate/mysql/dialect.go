@@ -12,6 +12,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/gflydev/core/errors"
 	"github.com/gflydev/core/utils"
 	migrate "github.com/gflydev/db/migrate"
 
@@ -42,7 +43,7 @@ func (Dialect) Open() (*sql.DB, error) {
 	)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("mysql: opening connection: %w", err)
+		return nil, errors.New("mysql: opening connection: %w", err)
 	}
 	return db, nil
 }
@@ -86,7 +87,7 @@ func (Dialect) Lock(ctx context.Context, conn *sql.Conn, key string) error {
 		return err
 	}
 	if !result.Valid || result.Int64 != 1 {
-		return fmt.Errorf("mysql: could not acquire lock %q within 10s — another migration is running", key)
+		return errors.New("mysql: could not acquire lock %q within 10s — another migration is running", key)
 	}
 	return nil
 }

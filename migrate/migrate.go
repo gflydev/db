@@ -3,9 +3,11 @@ package migrate
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"os"
 	"sort"
+
+	"github.com/gflydev/core/errors"
+	"github.com/gflydev/core/log"
+	"github.com/gflydev/core/utils"
 )
 
 // lockKey identifies this package's advisory lock to the database server. It is a fixed,
@@ -152,7 +154,7 @@ func (m *Migrator) Down(ctx context.Context, all bool, dryRun bool) (*Result, er
 		for _, name := range targets {
 			mig, ok := byName[name]
 			if !ok {
-				return fmt.Errorf("%w: %s (looked in %s)", ErrFilesMissing, name, m.dir)
+				return errors.New("%w: %s (looked in %s)", ErrFilesMissing, name, m.dir)
 			}
 			if err := m.runFile(ctx, conn, mig.DownPath); err != nil {
 				return err
@@ -251,7 +253,7 @@ func (m *Migrator) Baseline(ctx context.Context, version string, force bool) err
 			return err
 		}
 		if !empty && !force {
-			return fmt.Errorf("%w: %s", ErrNonEmptyTable, m.table)
+			return errors.New("%w: %s", ErrNonEmptyTable, m.table)
 		}
 
 		migrations, err := Load(m.dir)
@@ -259,7 +261,7 @@ func (m *Migrator) Baseline(ctx context.Context, version string, force bool) err
 			return err
 		}
 		if !hasVersion(migrations, version) {
-			return fmt.Errorf("%w: %s", ErrUnknownVersion, version)
+			return errors.New("%w: %s", ErrUnknownVersion, version)
 		}
 
 		for _, mig := range migrations {
@@ -301,9 +303,9 @@ func (m *Migrator) prepare(ctx context.Context, force bool) ([]Migration, map[st
 	}
 	if len(mismatched) > 0 {
 		if !force {
-			return nil, nil, fmt.Errorf("%w: %v", ErrChecksumMismatch, mismatched)
+			return nil, nil, errors.New("%w: %v", ErrChecksumMismatch, mismatched)
 		}
-		fmt.Fprintf(os.Stderr, "warning: %v: %v — proceeding because --force was given\n", ErrChecksumMismatch, mismatched)
+		log.Warnf("%v: %v — proceeding because --force was given", ErrChecksumMismatch, mismatched)
 	}
 
 	return migrations, records, nil
@@ -335,12 +337,12 @@ func checksumMismatches(migrations []Migration, records map[string]Record) ([]st
 func (m *Migrator) withLock(ctx context.Context, fn func(conn *sql.Conn) error) error {
 	conn, err := m.db.Conn(ctx)
 	if err != nil {
-		return fmt.Errorf("acquiring a connection: %w", err)
+		return errors.New("acquiring a connection: %w", err)
 	}
 	defer conn.Close()
 
 	if err := m.dialect.Lock(ctx, conn, lockKey); err != nil {
-		return fmt.Errorf("acquiring lock: %w", err)
+		return errors.New("acquiring lock: %w", err)
 	}
 	defer m.dialect.Unlock(ctx, conn, lockKey)
 
@@ -353,29 +355,33 @@ func (m *Migrator) withLock(ctx context.Context, fn func(conn *sql.Conn) error) 
 // auto-commit individually), it runs directly against conn, and a failure partway through means
 // the statements before it have already taken effect — the returned error says so explicitly,
 // since that can't be undone by this package.
+//
+// It reads path with gflydev/core/utils.ReadFileAsString rather than a raw os.ReadFile — see
+// the same note on source.go's checksum for why that's the right amount of abstraction here
+// (small SQL files, no need for the full gflydev/storage disk abstraction).
 func (m *Migrator) runFile(ctx context.Context, conn *sql.Conn, path string) error {
-	contents, err := os.ReadFile(path)
+	contents, err := utils.ReadFileAsString(path)
 	if err != nil {
-		return fmt.Errorf("reading %s: %w", path, err)
+		return errors.New("reading %s: %w", path, err)
 	}
 
 	if !m.dialect.SupportsTransactionalDDL() {
-		if _, err := conn.ExecContext(ctx, string(contents)); err != nil {
-			return fmt.Errorf("running %s (dialect has no transactional DDL — statements before the failure may already be applied): %w", path, err)
+		if _, err := conn.ExecContext(ctx, contents); err != nil {
+			return errors.New("running %s (dialect has no transactional DDL — statements before the failure may already be applied): %w", path, err)
 		}
 		return nil
 	}
 
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("beginning transaction for %s: %w", path, err)
+		return errors.New("beginning transaction for %s: %w", path, err)
 	}
-	if _, err := tx.ExecContext(ctx, string(contents)); err != nil {
+	if _, err := tx.ExecContext(ctx, contents); err != nil {
 		_ = tx.Rollback()
-		return fmt.Errorf("running %s: %w", path, err)
+		return errors.New("running %s: %w", path, err)
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("committing %s: %w", path, err)
+		return errors.New("committing %s: %w", path, err)
 	}
 	return nil
 }

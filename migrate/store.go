@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/gflydev/core/errors"
 )
 
 // store is the tracking-table data-access layer: every method issues exactly one query or exec
@@ -28,7 +30,7 @@ func newStore(db *sql.DB, dialect Dialect, table string) *store {
 // CREATE TABLE IF NOT EXISTS.
 func (s *store) ensureTable(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, s.dialect.CreateMigrationsTableSQL(s.table)); err != nil {
-		return fmt.Errorf("creating %s table: %w", s.table, err)
+		return errors.New("creating %s table: %w", s.table, err)
 	}
 	return nil
 }
@@ -43,7 +45,7 @@ func (s *store) list(ctx context.Context) (map[string]Record, error) {
 	)
 	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("listing %s: %w", s.table, err)
+		return nil, errors.New("listing %s: %w", s.table, err)
 	}
 	defer rows.Close()
 
@@ -51,7 +53,7 @@ func (s *store) list(ctx context.Context) (map[string]Record, error) {
 	for rows.Next() {
 		var r Record
 		if err := rows.Scan(&r.Migration, &r.Batch, &r.Status, &r.RunCount, &r.Checksum, &r.MigratedAt, &r.RolledBackAt); err != nil {
-			return nil, fmt.Errorf("scanning %s row: %w", s.table, err)
+			return nil, errors.New("scanning %s row: %w", s.table, err)
 		}
 		result[r.Migration] = r
 	}
@@ -64,7 +66,7 @@ func (s *store) latestBatch(ctx context.Context) (int, error) {
 	query := fmt.Sprintf(`SELECT COALESCE(MAX(batch), 0) FROM %s WHERE status = '%s'`, s.table, StatusUp)
 	var batch int
 	if err := s.db.QueryRowContext(ctx, query).Scan(&batch); err != nil {
-		return 0, fmt.Errorf("reading latest batch from %s: %w", s.table, err)
+		return 0, errors.New("reading latest batch from %s: %w", s.table, err)
 	}
 	return batch, nil
 }
@@ -77,7 +79,7 @@ func (s *store) latestBatch(ctx context.Context) (int, error) {
 func (s *store) markUp(ctx context.Context, name string, batch int, checksum string, runCount int) error {
 	query := s.dialect.UpsertMigrationSQL(s.table)
 	if _, err := s.db.ExecContext(ctx, query, name, batch, runCount, checksum); err != nil {
-		return fmt.Errorf("marking %s up: %w", name, err)
+		return errors.New("marking %s up: %w", name, err)
 	}
 	return nil
 }
@@ -91,7 +93,7 @@ func (s *store) markDown(ctx context.Context, name string) error {
 		s.table, StatusDown, s.dialect.Placeholder(1),
 	)
 	if _, err := s.db.ExecContext(ctx, query, name); err != nil {
-		return fmt.Errorf("marking %s down: %w", name, err)
+		return errors.New("marking %s down: %w", name, err)
 	}
 	return nil
 }
@@ -110,7 +112,7 @@ func (s *store) isEmpty(ctx context.Context) (bool, error) {
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM %s`, s.table)
 	var count int
 	if err := s.db.QueryRowContext(ctx, query).Scan(&count); err != nil {
-		return false, fmt.Errorf("counting %s: %w", s.table, err)
+		return false, errors.New("counting %s: %w", s.table, err)
 	}
 	return count == 0, nil
 }

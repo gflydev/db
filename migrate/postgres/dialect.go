@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/gflydev/core/errors"
 	"github.com/gflydev/core/utils"
 	migrate "github.com/gflydev/db/migrate"
 
@@ -41,7 +42,7 @@ func (Dialect) Open() (*sql.DB, error) {
 	)
 	db, err := sql.Open("pgx", connURL)
 	if err != nil {
-		return nil, fmt.Errorf("postgres: opening connection: %w", err)
+		return nil, errors.New("postgres: opening connection: %w", err)
 	}
 	return db, nil
 }

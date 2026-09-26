@@ -3,13 +3,14 @@ package migrate
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/gflydev/core/errors"
+	"github.com/gflydev/core/utils"
 )
 
 // filenamePattern matches a single migration file and captures its three parts: the 6-digit
@@ -26,10 +27,15 @@ var filenamePattern = regexp.MustCompile(`^(\d{6})_([a-z0-9_]+)\.(up|down)\.sql$
 // Returns an error listing every offending filename if any file fails the naming pattern or is
 // missing its up/down counterpart — Load fails all-or-nothing rather than returning a partial,
 // silently-incomplete set.
+//
+// Load lists dir with the standard library's os.ReadDir rather than gflydev/storage: the
+// migrations directory is part of the deployed source tree (like the framework's own view
+// templates), not a caller-configurable storage disk, and IStorage has no directory-listing
+// method to begin with.
 func Load(dir string) ([]Migration, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, fmt.Errorf("reading migrations directory %s: %w", dir, err)
+		return nil, errors.New("reading migrations directory %s: %w", dir, err)
 	}
 
 	ups := map[string]string{}   // name -> path
@@ -61,7 +67,7 @@ func Load(dir string) ([]Migration, error) {
 
 	if len(badNames) > 0 {
 		sort.Strings(badNames)
-		return nil, fmt.Errorf("filenames must match NNNNNN_name.(up|down).sql: %s", strings.Join(badNames, ", "))
+		return nil, errors.New("filenames must match NNNNNN_name.(up|down).sql: %s", strings.Join(badNames, ", "))
 	}
 
 	var orphans []string
@@ -77,7 +83,7 @@ func Load(dir string) ([]Migration, error) {
 	}
 	if len(orphans) > 0 {
 		sort.Strings(orphans)
-		return nil, fmt.Errorf("unpaired migration file(s): %s", strings.Join(orphans, ", "))
+		return nil, errors.New("unpaired migration file(s): %s", strings.Join(orphans, ", "))
 	}
 
 	migrations := make([]Migration, 0, len(ups))
@@ -96,16 +102,16 @@ func Load(dir string) ([]Migration, error) {
 
 // checksum returns the hex-encoded sha256 of path's contents. Migrator uses it to detect when
 // an applied migration's .up.sql file has changed since it ran (ErrChecksumMismatch).
+//
+// It reads the file through gflydev/core/utils.ReadFileAsString rather than crypto/sha256's
+// usual io.Copy-from-an-open-file idiom: migration files are always small (SQL scripts, not
+// data dumps), so the simpler one-shot read costs nothing and keeps this package's file access
+// on the same helper Migrator.runFile uses.
 func checksum(path string) (string, error) {
-	f, err := os.Open(path)
+	contents, err := utils.ReadFileAsString(path)
 	if err != nil {
-		return "", fmt.Errorf("checksumming %s: %w", path, err)
+		return "", errors.New("checksumming %s: %w", path, err)
 	}
-	defer f.Close()
-
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", fmt.Errorf("checksumming %s: %w", path, err)
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
+	sum := sha256.Sum256([]byte(contents))
+	return hex.EncodeToString(sum[:]), nil
 }

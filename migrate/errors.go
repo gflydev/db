@@ -1,11 +1,17 @@
 package migrate
 
-import "errors"
+import "github.com/gflydev/core/errors"
 
-// Sentinel errors returned by Migrator. Wrap these with fmt.Errorf("%w: ...", ErrX) rather than
-// building a new, unmatched error string for the same condition — callers (including this
-// package's own CLI and tests) must be able to distinguish them with errors.Is instead of
-// parsing error text.
+// Sentinel errors returned by Migrator. Wrap these with errors.New("%w: ...", ErrX) (this
+// package's convention — see Migrator's own error sites — is github.com/gflydev/core/errors,
+// not the standard library's, matching the rest of the gFly framework) rather than building a
+// new, unmatched error string for the same condition. Callers, including this package's own CLI
+// and tests, must be able to distinguish them with errors.Is instead of parsing error text.
+//
+// These stay distinct from github.com/gflydev/core/errors' own sentinels (ItemNotFound,
+// InvalidParameter, ...): those are shaped for mapping an HTTP request to a status code, and
+// reusing one here would make an unrelated part of a gFly app's API layer match on a condition
+// that has nothing to do with it.
 var (
 	// ErrChecksumMismatch means a migration recorded as applied ("up") no longer matches the
 	// sha256 checksum stored when it ran — its .up.sql file changed on disk since then. Up,
