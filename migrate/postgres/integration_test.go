@@ -13,8 +13,9 @@ import (
 
 // TestDialect_Integration_FullCycle exercises up -> status -> down -> up-again against a real
 // Postgres. Run with DB_* env vars pointed at a disposable database:
-// DB_HOST=localhost DB_PORT=5432 DB_NAME=gfly_migrate_test DB_USERNAME=... DB_PASSWORD=... \
-//   go test -tags=integration ./... -v
+//
+//	DB_HOST=localhost DB_PORT=5432 DB_NAME=gfly_migrate_test DB_USERNAME=... DB_PASSWORD=... \
+//	  go test -tags=integration ./... -v
 func TestDialect_Integration_FullCycle(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, "000001_create_widgets.up.sql"), "CREATE TABLE widgets (id SERIAL PRIMARY KEY);")

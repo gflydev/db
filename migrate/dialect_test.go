@@ -32,4 +32,4 @@ func (f *fakeDialect) Lock(ctx context.Context, conn *sql.Conn, key string) erro
 	return f.lockErr
 }
 func (f *fakeDialect) Unlock(ctx context.Context, conn *sql.Conn, key string) error { return nil }
-func (f *fakeDialect) SupportsTransactionalDDL() bool                              { return f.transactional }
+func (f *fakeDialect) SupportsTransactionalDDL() bool                               { return f.transactional }
