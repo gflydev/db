@@ -2,11 +2,9 @@ module github.com/gflydev/db/migrate/mysql
 
 go 1.26.0
 
-replace github.com/gflydev/db/migrate => ../
-
 require (
 	github.com/gflydev/core v1.18.3
-	github.com/gflydev/db/migrate v0.0.0
+	github.com/gflydev/db/migrate v1.0.0
 	github.com/go-sql-driver/mysql v1.10.1
 )
 
