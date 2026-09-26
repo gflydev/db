@@ -227,8 +227,8 @@ func (m *Migrator) Status(ctx context.Context) ([]StatusRow, error) {
 
 // orphanedRows returns a StatusRow, sorted by name, for every tracking-table record whose
 // migration name is not in onDisk — i.e. Load found no .sql files for it. Version is parsed
-// from the recorded name's leading 6 characters, matching every other migration's naming
-// convention; UpPath/DownPath are left empty since there is nothing on disk to point to.
+// from the recorded name's leading versionLength characters, matching every other migration's
+// naming convention; UpPath/DownPath are left empty since there is nothing on disk to point to.
 func orphanedRows(records map[string]Record, onDisk map[string]bool) []StatusRow {
 	var names []string
 	for name := range records {
@@ -242,8 +242,8 @@ func orphanedRows(records map[string]Record, onDisk map[string]bool) []StatusRow
 	for _, name := range names {
 		rec := records[name]
 		version := name
-		if len(name) >= 6 {
-			version = name[:6]
+		if len(name) >= versionLength {
+			version = name[:versionLength]
 		}
 		rows = append(rows, StatusRow{
 			Migration:   Migration{Version: version, Name: name},

@@ -4,9 +4,16 @@
     https://www.gfly.dev
     All rights reserved.
 
-Runs versioned `*.sql` migration files (golang-migrate's `NNNNNN_name.up.sql` / `.down.sql`
-naming convention) against PostgreSQL or MySQL, tracking each file's state — applied/rolled
-back, batch, run count, checksum — in a `migrations` table it manages itself.
+Runs versioned `*.sql` migration files — named `YYYYMMDD_HHMMSS_description.up.sql` /
+`.down.sql`, a UTC timestamp to the second — against PostgreSQL or MySQL, tracking each file's
+state — applied/rolled back, batch, run count, checksum — in a `migrations` table it manages
+itself.
+
+The timestamp (not a small sequential counter, and not configurable to anything else) is
+deliberate: when two people on separate branches each pick "the next number," they either
+collide or, worse, silently don't collide but sort in an order neither of them intended once
+merged. A per-second timestamp makes that collision astronomically unlikely and keeps the merged
+order matching the order each file was actually written in. `--new` (below) generates one.
 
 ## Install
 
@@ -45,14 +52,15 @@ Connection settings are read from `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`
 `github.com/gflydev/db/mysql` already use).
 
 ```bash
-./build/artisan db:migrate                    # apply the single next pending migration
-./build/artisan db:migrate --all              # apply every pending migration (one batch)
-./build/artisan db:migrate --down             # roll back the single most recent migration
-./build/artisan db:migrate --down --all       # roll back every migration in the latest batch
-./build/artisan db:migrate --status           # show every migration's state
-./build/artisan db:migrate --dry-run          # combine with the above: print, don't execute
-./build/artisan db:migrate --baseline=000023  # mark files up to 000023 as already applied
-./build/artisan db:migrate help               # same as -h/--help: print the flag list and examples above
+./build/artisan db:migrate                              # apply the single next pending migration
+./build/artisan db:migrate --all                        # apply every pending migration (one batch)
+./build/artisan db:migrate --down                       # roll back the single most recent migration
+./build/artisan db:migrate --down --all                 # roll back every migration in the latest batch
+./build/artisan db:migrate --status                     # show every migration's state
+./build/artisan db:migrate --dry-run                    # combine with the above: print, don't execute
+./build/artisan db:migrate --new=create_widgets_table   # create a new migration pair, timestamped now
+./build/artisan db:migrate --baseline=20260101_000000   # mark files up to that timestamp as already applied
+./build/artisan db:migrate help                         # same as -h/--help: print the flag list and examples above
 ```
 
 ## Design notes
@@ -73,6 +81,11 @@ Connection settings are read from `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`
   migrations directory (deleted or renamed after it ran) as `FILE MISSING` — without this check
   such a row would simply vanish from every command's view, staying in the table forever with no
   way to roll it back until the files are restored.
+- `Load` accepts exactly one filename shape — `YYYYMMDD_HHMMSS_description.(up|down).sql` with a
+  real, parseable UTC timestamp — and refuses the whole directory (not just the offending file)
+  if anything else is in it, including golang-migrate's older `NNNNNN_description.up.sql`
+  sequential-number style. A migrations directory adopting this module for the first time must
+  rename its existing files to the timestamp style before `db:migrate` will run at all.
 
 ## Testing
 

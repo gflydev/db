@@ -14,8 +14,8 @@ import (
 // error (so a typo lands on a full explanation, not just a one-line flag error). Keep it in
 // sync with the flag descriptions below and with the package README's own command table.
 const helpText = `db:migrate applies or rolls back the *.sql files in a migrations directory
-(golang-migrate's NNNNNN_name.up.sql / .down.sql convention), tracking each file's state in a
-"migrations" table it manages itself.
+(each pair named YYYYMMDD_HHMMSS_description.up.sql / .down.sql, in UTC), tracking each file's
+state in a "migrations" table it manages itself.
 
 Usage:
   db:migrate [flags]
@@ -26,18 +26,20 @@ Flags:
   --down                Roll back instead of applying.
   --status              Print every migration's state and exit.
   --dry-run             Print what would run without executing it.
+  --new=NAME            Create a new migration pair timestamped now, named NAME, then exit.
   --baseline=VERSION    Mark every migration up to VERSION as already applied, without running SQL.
   --force               Overwrite an existing baseline, or proceed past a checksum mismatch.
   -h, --help            Show this help.
 
 Examples:
-  db:migrate                     Apply the next pending migration
-  db:migrate --all               Apply every pending migration
-  db:migrate --down              Roll back the most recently applied migration
-  db:migrate --down --all        Roll back every migration in the latest batch
-  db:migrate --status            Show every migration's state
-  db:migrate --dry-run --all     Show which migrations --all would apply, without running them
-  db:migrate --baseline=000023   Mark 000001..000023 as already applied, without running SQL
+  db:migrate                              Apply the next pending migration
+  db:migrate --all                        Apply every pending migration
+  db:migrate --down                       Roll back the most recently applied migration
+  db:migrate --down --all                 Roll back every migration in the latest batch
+  db:migrate --status                     Show every migration's state
+  db:migrate --dry-run --all              Show which migrations --all would apply, without running them
+  db:migrate --new=create_widgets_table   Create 20260512_230412_create_widgets_table.{up,down}.sql
+  db:migrate --baseline=20260101_000000   Mark every migration up to that timestamp as already applied
 `
 
 // RunCLI parses args (everything after "db:migrate" on the command line — see the package
@@ -69,6 +71,7 @@ func runCLI(args []string, dialect Dialect, dir string, stdout, stderr io.Writer
 	all := fs.Bool("all", false, "apply/roll back every pending file (default: exactly one)")
 	status := fs.Bool("status", false, "print every migration's state and exit")
 	dryRun := fs.Bool("dry-run", false, "print what would run without executing it")
+	newDesc := fs.String("new", "", "create a new migration pair timestamped now, named NAME, then exit")
 	baseline := fs.String("baseline", "", "mark every migration up to VERSION as already applied, without running SQL")
 	force := fs.Bool("force", false, "overwrite an existing baseline, or proceed past a checksum mismatch")
 
@@ -78,6 +81,17 @@ func runCLI(args []string, dialect Dialect, dir string, stdout, stderr io.Writer
 		}
 		return 1
 	}
+
+	if *newDesc != "" {
+		mig, err := New(dir, *newDesc)
+		if err != nil {
+			fmt.Fprintf(stderr, "migrate: %v\n", err)
+			return 1
+		}
+		fmt.Fprintf(stdout, "Created %s\nCreated %s\n", mig.UpPath, mig.DownPath)
+		return 0
+	}
+
 	if *baseline != "" && (*down || *all) {
 		fmt.Fprintf(stderr, "migrate: %v\n", ErrConflictingFlags)
 		return 1

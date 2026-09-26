@@ -18,8 +18,8 @@ import (
 //	  go test -tags=integration ./... -v
 func TestDialect_Integration_FullCycle(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, filepath.Join(dir, "000001_create_widgets.up.sql"), "CREATE TABLE widgets (id INT AUTO_INCREMENT PRIMARY KEY);")
-	writeFile(t, filepath.Join(dir, "000001_create_widgets.down.sql"), "DROP TABLE widgets;")
+	writeFile(t, filepath.Join(dir, "20260101_000001_create_widgets.up.sql"), "CREATE TABLE widgets (id INT AUTO_INCREMENT PRIMARY KEY);")
+	writeFile(t, filepath.Join(dir, "20260101_000001_create_widgets.down.sql"), "DROP TABLE widgets;")
 
 	db, err := (Dialect{}).Open()
 	if err != nil {

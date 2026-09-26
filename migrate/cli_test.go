@@ -40,6 +40,23 @@ func TestRunCLI_DashDashHelpFlag_PrintsHelpAndExitsZero(t *testing.T) {
 	}
 }
 
+func TestRunCLI_New_CreatesFilesWithoutTouchingTheDatabase(t *testing.T) {
+	dir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	// The fakeDialect has no openFn, so Open() would fail — proving --new never calls it.
+	code := runCLI([]string{"--new=create_widgets_table"}, &fakeDialect{name: "fake"}, dir, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("got exit code %d, want 0; stderr: %s", code, stderr.String())
+	}
+	migrations, err := Load(dir)
+	if err != nil {
+		t.Fatalf("Load(dir) after --new returned error: %v", err)
+	}
+	if len(migrations) != 1 || !bytes.Contains([]byte(migrations[0].Name), []byte("create_widgets_table")) {
+		t.Fatalf("got %+v, want one migration named *_create_widgets_table", migrations)
+	}
+}
+
 func TestRunCLI_UnknownFlag_ReturnsOneAndPrintsUsage(t *testing.T) {
 	var stderr bytes.Buffer
 	code := runCLI([]string{"--nonsense"}, &fakeDialect{name: "fake"}, "testdata/valid", &bytes.Buffer{}, &stderr)
@@ -53,7 +70,7 @@ func TestRunCLI_UnknownFlag_ReturnsOneAndPrintsUsage(t *testing.T) {
 
 func TestRunCLI_BaselineWithDown_IsRejected(t *testing.T) {
 	var stderr bytes.Buffer
-	code := runCLI([]string{"--baseline=000001", "--down"}, &fakeDialect{name: "fake"}, "testdata/valid", &bytes.Buffer{}, &stderr)
+	code := runCLI([]string{"--baseline=20260101_000001", "--down"}, &fakeDialect{name: "fake"}, "testdata/valid", &bytes.Buffer{}, &stderr)
 	if code != 1 {
 		t.Fatalf("got exit code %d, want 1", code)
 	}
@@ -61,7 +78,7 @@ func TestRunCLI_BaselineWithDown_IsRejected(t *testing.T) {
 
 func TestRunCLI_BaselineWithAll_IsRejected(t *testing.T) {
 	var stderr bytes.Buffer
-	code := runCLI([]string{"--baseline=000001", "--all"}, &fakeDialect{name: "fake"}, "testdata/valid", &bytes.Buffer{}, &stderr)
+	code := runCLI([]string{"--baseline=20260101_000001", "--all"}, &fakeDialect{name: "fake"}, "testdata/valid", &bytes.Buffer{}, &stderr)
 	if code != 1 {
 		t.Fatalf("got exit code %d, want 1", code)
 	}
@@ -94,8 +111,8 @@ func TestRunCLI_Status_PrintsOneLinePerMigration(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("got exit code %d, want 0; stdout: %s", code, stdout.String())
 	}
-	if !bytes.Contains(stdout.Bytes(), []byte("000001_create_users")) {
-		t.Fatalf("expected status output to mention 000001_create_users, got: %s", stdout.String())
+	if !bytes.Contains(stdout.Bytes(), []byte("20260101_000001_create_users")) {
+		t.Fatalf("expected status output to mention 20260101_000001_create_users, got: %s", stdout.String())
 	}
 	if !bytes.Contains(stdout.Bytes(), []byte("pending")) {
 		t.Fatalf("expected status output to show a pending row, got: %s", stdout.String())
@@ -111,7 +128,7 @@ func TestRunCLI_Status_OrphanedRecord_ShowsFileMissingAndNote(t *testing.T) {
 
 	mock.ExpectExec(`CREATE TABLE IF NOT EXISTS migrations`).WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectQuery(`SELECT migration, batch, status`).WillReturnRows(emptyRecordRows().
-		AddRow("000099_deleted_from_disk", 3, "down", 1, "whatever", nil, nil))
+		AddRow("20260101_000099_deleted_from_disk", 3, "down", 1, "whatever", nil, nil))
 
 	dialect := &fakeDialect{name: "fake", openFn: func() (*sql.DB, error) { return db, nil }}
 	var stdout bytes.Buffer
@@ -119,7 +136,7 @@ func TestRunCLI_Status_OrphanedRecord_ShowsFileMissingAndNote(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("got exit code %d, want 0; stdout: %s", code, stdout.String())
 	}
-	if !bytes.Contains(stdout.Bytes(), []byte("000099_deleted_from_disk")) {
+	if !bytes.Contains(stdout.Bytes(), []byte("20260101_000099_deleted_from_disk")) {
 		t.Fatalf("expected the orphaned record's name in the table, got: %s", stdout.String())
 	}
 	if !bytes.Contains(stdout.Bytes(), []byte("FILE MISSING")) {
@@ -137,13 +154,13 @@ func TestRunCLI_Up_NothingPending_PrintsNothingToDo(t *testing.T) {
 	}
 	defer db.Close()
 
-	c1, _ := checksum(filepath.Join("testdata", "valid", "000001_create_users.up.sql"))
-	c2, _ := checksum(filepath.Join("testdata", "valid", "000002_add_email_index.up.sql"))
+	c1, _ := checksum(filepath.Join("testdata", "valid", "20260101_000001_create_users.up.sql"))
+	c2, _ := checksum(filepath.Join("testdata", "valid", "20260101_000002_add_email_index.up.sql"))
 
 	mock.ExpectExec(`CREATE TABLE IF NOT EXISTS migrations`).WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectQuery(`SELECT migration, batch, status`).WillReturnRows(emptyRecordRows().
-		AddRow("000001_create_users", 1, "up", 1, c1, nil, nil).
-		AddRow("000002_add_email_index", 1, "up", 1, c2, nil, nil))
+		AddRow("20260101_000001_create_users", 1, "up", 1, c1, nil, nil).
+		AddRow("20260101_000002_add_email_index", 1, "up", 1, c2, nil, nil))
 
 	dialect := &fakeDialect{name: "fake", openFn: func() (*sql.DB, error) { return db, nil }}
 	var stdout bytes.Buffer

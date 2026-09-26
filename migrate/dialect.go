@@ -5,9 +5,14 @@
 //
 // # File layout
 //
-// Migrations live as pairs of files named "NNNNNN_description.up.sql" and
-// "NNNNNN_description.down.sql" (golang-migrate's convention) in a single directory; Load
-// discovers and validates them.
+// Migrations live as pairs of files named "YYYYMMDD_HHMMSS_description.up.sql" and
+// "YYYYMMDD_HHMMSS_description.down.sql" — a UTC timestamp, to the second, then a snake_case
+// description — in a single directory; Load discovers and validates them. The timestamp (not a
+// small sequential counter) is deliberate: two people working on separate branches each pick
+// "the next number" independently and collide or, worse, don't collide but sort in an order
+// neither of them intended once merged. A timestamp taken at the moment the file is created
+// makes that collision astronomically unlikely and keeps the merged order matching the order
+// each file was actually written in. New creates a fresh pair with the current timestamp.
 //
 // # Concurrency
 //
@@ -36,6 +41,17 @@ const (
 	// (postgres, mysql) share one definition instead of three independently hand-typed copies.
 	StatusUp   = "up"
 	StatusDown = "down"
+
+	// timestampLayout is a Migration.Version's exact shape, as a time.Parse/time.Format
+	// reference layout: 8 date digits, an underscore, 6 time digits, always UTC.
+	timestampLayout = "20060102_150405"
+
+	// versionLength is len(timestampLayout) — the fixed width of the prefix that identifies a
+	// migration's position in time. Because every version is this same fixed width, plain
+	// lexical string comparison (used throughout this package: sorting, --baseline's "<=",
+	// Record.Batch lookups) already equals chronological comparison; nothing here parses a
+	// version back into a time.Time except Load's own validation.
+	versionLength = len(timestampLayout)
 )
 
 // Dialect is the seam between this package's orchestration and a specific database.
@@ -75,10 +91,10 @@ type Dialect interface {
 
 // Migration is one file pair discovered on disk by Load.
 type Migration struct {
-	// Version is the 6-digit numeric prefix, e.g. "000024".
+	// Version is the UTC timestamp prefix in timestampLayout's shape, e.g. "20260512_230412".
 	Version string
-	// Name is the filename's identity: the numeric prefix and description, without the
-	// .up.sql/.down.sql suffix, e.g. "000024_create_widgets_table".
+	// Name is the filename's identity: the timestamp and description, without the
+	// .up.sql/.down.sql suffix, e.g. "20260512_230412_create_widgets_table".
 	Name string
 	// UpPath and DownPath are absolute (or working-directory-relative) paths to the two files.
 	UpPath, DownPath string

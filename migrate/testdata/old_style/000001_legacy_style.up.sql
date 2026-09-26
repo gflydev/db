@@ -1,0 +1,1 @@
+CREATE TABLE legacy (id SERIAL PRIMARY KEY);
