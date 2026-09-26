@@ -1,12 +1,41 @@
 // Package migrate runs versioned *.sql migration files against a database, tracking each
-// file's state (applied/rolled back, batch, run count, checksum) in a "migrations" table it
-// manages itself. It is dialect-agnostic: see the postgres and mysql subpackages for the two
-// supported databases.
+// file's state (applied/rolled back, batch, run count, checksum) in a tracking table it manages
+// itself. It is dialect-agnostic: see the postgres and mysql subpackages for the two supported
+// databases, and RunCLI for wiring it into an application's own command-line entrypoint.
+//
+// # File layout
+//
+// Migrations live as pairs of files named "NNNNNN_description.up.sql" and
+// "NNNNNN_description.down.sql" (golang-migrate's convention) in a single directory; Load
+// discovers and validates them.
+//
+// # Concurrency
+//
+// A Migrator is not safe for concurrent use by multiple goroutines within one process — each
+// exported method holds the underlying *sql.DB open for its own duration and returns before the
+// next call should start. Concurrent processes are handled separately: every method acquires
+// the dialect's advisory lock for its full duration, so two OS processes (e.g. two deploys
+// racing) serialize instead of corrupting the tracking table.
 package migrate
 
 import (
 	"context"
 	"database/sql"
+)
+
+const (
+	// DefaultTable is the tracking table name every adopter of this package uses. It is not
+	// configurable (see NewMigrator) — one gFly app has one migrations directory and one
+	// tracking table, and a configurable name would only invite drift between the table a
+	// health check reads and the one db:migrate writes.
+	DefaultTable = "migrations"
+
+	// StatusUp and StatusDown are the two values Record.Status takes. They are exported so a
+	// caller inspecting Status's results doesn't need to guess the tracking table's raw string
+	// values, and so this package's own SQL (store.go) and each Dialect's generated SQL
+	// (postgres, mysql) share one definition instead of three independently hand-typed copies.
+	StatusUp   = "up"
+	StatusDown = "down"
 )
 
 // Dialect is the seam between this package's orchestration and a specific database.
@@ -55,14 +84,29 @@ type Migration struct {
 	UpPath, DownPath string
 }
 
-// Record is one row of the migrations table.
+// Record is one row of the tracking table, as last read by store.list.
 type Record struct {
-	Migration    string
-	Batch        int
-	Status       string // "up" or "down"
-	RunCount     int
-	Checksum     string
-	MigratedAt   sql.NullTime
+	// Migration is the tracked migration's identity — the same value as the matching
+	// Migration.Name (e.g. "000024_create_widgets_table").
+	Migration string
+	// Batch is the batch number assigned the last time this migration was applied. It keeps
+	// its value after a rollback (Status becomes StatusDown) so it remains a historical record;
+	// it is only reassigned by a fresh "up".
+	Batch int
+	// Status is either StatusUp or StatusDown.
+	Status string
+	// RunCount is the number of times this migration has been successfully applied, including
+	// re-applications after a rollback. It is never decremented.
+	RunCount int
+	// Checksum is the sha256 (hex-encoded) of the .up.sql file's contents as of the last time
+	// this migration was applied. It is compared against the current file on disk before every
+	// operation; see ErrChecksumMismatch.
+	Checksum string
+	// MigratedAt is the time of the last successful "up"; zero-valued (Valid == false) if this
+	// migration has never been applied.
+	MigratedAt sql.NullTime
+	// RolledBackAt is the time of the last "down"; zero-valued (Valid == false) if this
+	// migration has never been rolled back.
 	RolledBackAt sql.NullTime
 }
 

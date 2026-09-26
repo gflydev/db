@@ -9,13 +9,19 @@ import (
 	"text/tabwriter"
 )
 
-// RunCLI parses args (everything after "db:migrate" on the command line), runs the requested
-// operation against dialect's database, and returns a process exit code: 0 on success
-// (including "nothing to do"), 1 on any error.
+// RunCLI parses args (everything after "db:migrate" on the command line — see the package
+// README for the full flag list), runs the requested operation against dialect's database, and
+// returns a process exit code: 0 on success (including "nothing to do"), 1 on any error
+// (printed to os.Stderr). A typical caller wires it in as:
+//
+//	case args[0] == "db:migrate":
+//	    os.Exit(migrate.RunCLI(args[1:], postgres.Dialect{}, "database/migrations"))
 func RunCLI(args []string, dialect Dialect, dir string) int {
 	return runCLI(args, dialect, dir, os.Stdout, os.Stderr)
 }
 
+// runCLI is RunCLI with stdout/stderr as parameters instead of the real os.Stdout/os.Stderr, so
+// tests can capture output without touching the process's real streams.
 func runCLI(args []string, dialect Dialect, dir string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("db:migrate", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -30,7 +36,7 @@ func runCLI(args []string, dialect Dialect, dir string, stdout, stderr io.Writer
 		return 1
 	}
 	if *baseline != "" && (*down || *all) {
-		fmt.Fprintln(stderr, "migrate: --baseline cannot be combined with --down or --all")
+		fmt.Fprintf(stderr, "migrate: %v\n", ErrConflictingFlags)
 		return 1
 	}
 
@@ -41,7 +47,7 @@ func runCLI(args []string, dialect Dialect, dir string, stdout, stderr io.Writer
 	}
 	defer db.Close()
 
-	m := NewMigrator(db, dialect, dir, "migrations")
+	m := NewMigrator(db, dialect, dir, DefaultTable)
 	ctx := context.Background()
 
 	switch {
@@ -82,6 +88,9 @@ func runCLI(args []string, dialect Dialect, dir string, stdout, stderr io.Writer
 	}
 }
 
+// printResult writes one line per entry in result.Applied, phrased with pastTense ("Applied",
+// "Rolled back") normally or infinitive ("apply", "roll back") prefixed with "Would " under
+// dryRun. Writes a single "Nothing to do." line if result.Applied is empty.
 func printResult(w io.Writer, infinitive, pastTense string, dryRun bool, result *Result) {
 	if len(result.Applied) == 0 {
 		fmt.Fprintln(w, "Nothing to do.")
@@ -96,6 +105,9 @@ func printResult(w io.Writer, infinitive, pastTense string, dryRun bool, result 
 	}
 }
 
+// printStatus renders rows as a tab-aligned table: one line per migration, showing its version,
+// name, status (falling back to "pending" for a migration never applied), batch, run count, and
+// whether its on-disk checksum still matches ("ok", "MISMATCH", or "-" if never applied).
 func printStatus(w io.Writer, rows []StatusRow) {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
 	fmt.Fprintln(tw, "VERSION\tNAME\tSTATUS\tBATCH\tRUNS\tCHECKSUM")
@@ -105,10 +117,9 @@ func printStatus(w io.Writer, rows []StatusRow) {
 			status = row.Record.Status
 			batch = fmt.Sprintf("%d", row.Record.Batch)
 			runs = fmt.Sprintf("%d", row.Record.RunCount)
-			if row.Record.Status == "up" {
-				if row.ChecksumMatches {
-					sum = "ok"
-				} else {
+			if row.Record.Status == StatusUp {
+				sum = "ok"
+				if !row.ChecksumMatches {
 					sum = "MISMATCH"
 				}
 			}

@@ -3,6 +3,7 @@ package migrate
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -90,8 +91,8 @@ func TestMigrator_Up_ChecksumMismatch_AbortsWithoutForce(t *testing.T) {
 
 	m := newTestMigrator(db, filepath.Join("testdata", "valid"))
 	_, err = m.Up(context.Background(), true, false)
-	if err == nil {
-		t.Fatal("expected a checksum-mismatch error, got nil")
+	if !errors.Is(err, ErrChecksumMismatch) {
+		t.Fatalf("got error %v, want errors.Is(err, ErrChecksumMismatch)", err)
 	}
 }
 
@@ -178,8 +179,43 @@ func TestMigrator_Baseline_NonEmptyTable_RefusesWithoutForce(t *testing.T) {
 
 	m := newTestMigrator(db, filepath.Join("testdata", "valid"))
 	err = m.Baseline(context.Background(), "000001", false)
-	if err == nil {
-		t.Fatal("expected an error for baseline on a non-empty table without --force, got nil")
+	if !errors.Is(err, ErrNonEmptyTable) {
+		t.Fatalf("got error %v, want errors.Is(err, ErrNonEmptyTable)", err)
+	}
+}
+
+func TestMigrator_Baseline_UnknownVersion_ReturnsError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectExec(`CREATE TABLE IF NOT EXISTS migrations`).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM migrations`).WillReturnRows(sqlmock.NewRows([]string{"c"}).AddRow(0))
+
+	m := newTestMigrator(db, filepath.Join("testdata", "valid"))
+	err = m.Baseline(context.Background(), "999999", false)
+	if !errors.Is(err, ErrUnknownVersion) {
+		t.Fatalf("got error %v, want errors.Is(err, ErrUnknownVersion)", err)
+	}
+}
+
+func TestMigrator_Down_RecordedMigrationHasNoFiles_ReturnsError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectExec(`CREATE TABLE IF NOT EXISTS migrations`).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectQuery(`SELECT migration, batch, status`).WillReturnRows(emptyRecordRows().
+		AddRow("000099_deleted_from_disk", 1, "up", 1, "whatever-checksum-does-not-matter-when-mismatch-check-is-skipped", nil, nil))
+
+	m := newTestMigrator(db, filepath.Join("testdata", "valid"))
+	_, err = m.Down(context.Background(), false, false)
+	if !errors.Is(err, ErrFilesMissing) {
+		t.Fatalf("got error %v, want errors.Is(err, ErrFilesMissing)", err)
 	}
 }
 

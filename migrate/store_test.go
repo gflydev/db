@@ -19,7 +19,7 @@ func TestStore_MarkUp_FirstApplication_Inserts(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	s := newStore(db, &fakeDialect{name: "fake"}, "migrations")
-	if err := s.markUp(context.Background(), "000001_create_users", 1, "abc123"); err != nil {
+	if err := s.markUp(context.Background(), "000001_create_users", 1, "abc123", 1); err != nil {
 		t.Fatalf("markUp returned error: %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -39,8 +39,28 @@ func TestStore_MarkUp_Reapplication_WritesGivenRunCount(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	s := newStore(db, &fakeDialect{name: "fake"}, "migrations")
-	if err := s.markUpWithRunCount(context.Background(), "000001_create_users", 2, "def456", 2); err != nil {
-		t.Fatalf("markUpWithRunCount returned error: %v", err)
+	if err := s.markUp(context.Background(), "000001_create_users", 2, "def456", 2); err != nil {
+		t.Fatalf("markUp returned error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestStore_BaselineMark_UsesBatchZeroAndRunCountOne(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectExec(`INSERT INTO migrations`).
+		WithArgs("000001_create_users", 0, 1, "abc123").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	s := newStore(db, &fakeDialect{name: "fake"}, "migrations")
+	if err := s.baselineMark(context.Background(), "000001_create_users", "abc123"); err != nil {
+		t.Fatalf("baselineMark returned error: %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet expectations: %v", err)

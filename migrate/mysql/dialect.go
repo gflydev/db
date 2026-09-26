@@ -2,9 +2,9 @@
 //
 // MySQL's DDL statements auto-commit individually — CreateMigrationsTableSQL,
 // UpsertMigrationSQL and every migration file run without the rollback safety net that
-// PostgreSQL gets from wrapping a file in a transaction. See migrate.Dialect's
-// SupportsTransactionalDDL and the spec's "Per-file execution and rollback-on-error" decision
-// (docs/specs/2026-09-26-db-migrate-cli.md in the dancefitvn repo).
+// PostgreSQL gets from wrapping a file in a transaction. See SupportsTransactionalDDL and the
+// migrate package's own migrate.go doc comment on Migrator.runFile for what this means for a
+// failure partway through a file.
 package mysql
 
 import (
@@ -18,16 +18,19 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// Dialect implements migrate.Dialect for MySQL.
+// Dialect implements migrate.Dialect for MySQL. It is stateless; the zero value (Dialect{}) is
+// ready to use.
 type Dialect struct{}
 
 var _ migrate.Dialect = Dialect{}
 
+// Name identifies this dialect as "mysql" in log and error output.
 func (Dialect) Name() string { return "mysql" }
 
-// Open reads the same DB_* environment variables as github.com/gflydev/db/mysql, forcing
-// multiStatements (a migration file may contain more than one SQL statement) and parseTime
-// (so TIMESTAMP columns scan into time.Time).
+// Open reads the same DB_HOST/DB_PORT/DB_NAME/DB_USERNAME/DB_PASSWORD environment variables as
+// github.com/gflydev/db/mysql and returns a connection pool. It forces multiStatements=true (a
+// migration file may contain more than one SQL statement) and parseTime=true (so TIMESTAMP
+// columns scan into time.Time) in the DSN regardless of what the caller's environment sets.
 func (Dialect) Open() (*sql.DB, error) {
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%v)/%s?multiStatements=true&parseTime=true",
@@ -44,6 +47,9 @@ func (Dialect) Open() (*sql.DB, error) {
 	return db, nil
 }
 
+// CreateMigrationsTableSQL returns the CREATE TABLE IF NOT EXISTS statement for table, matching
+// the schema documented in the migrate package's README (migration, batch, status, run_count,
+// checksum, migrated_at, rolled_back_at).
 func (Dialect) CreateMigrationsTableSQL(table string) string {
 	return fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
 		id INT AUTO_INCREMENT PRIMARY KEY,
@@ -57,16 +63,23 @@ func (Dialect) CreateMigrationsTableSQL(table string) string {
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`, table)
 }
 
+// UpsertMigrationSQL returns an INSERT ... ON DUPLICATE KEY UPDATE statement for table, taking
+// (migration, batch, run_count, checksum) as its four "?" placeholders in order and always
+// setting status to migrate.StatusUp and migrated_at to the current time.
 func (Dialect) UpsertMigrationSQL(table string) string {
 	return fmt.Sprintf(`INSERT INTO %s (migration, batch, status, run_count, checksum, migrated_at)
-		VALUES (?, ?, 'up', ?, ?, CURRENT_TIMESTAMP)
+		VALUES (?, ?, '%s', ?, ?, CURRENT_TIMESTAMP)
 		ON DUPLICATE KEY UPDATE
-			batch = VALUES(batch), status = 'up', run_count = VALUES(run_count),
-			checksum = VALUES(checksum), migrated_at = CURRENT_TIMESTAMP`, table)
+			batch = VALUES(batch), status = '%s', run_count = VALUES(run_count),
+			checksum = VALUES(checksum), migrated_at = CURRENT_TIMESTAMP`, table, migrate.StatusUp, migrate.StatusUp)
 }
 
+// Placeholder always returns "?" — MySQL does not number its placeholders, so argPos is unused.
 func (Dialect) Placeholder(argPos int) string { return "?" }
 
+// Lock acquires a connection-scoped MySQL named lock via GET_LOCK, waiting up to 10 seconds.
+// Returns an error if the lock could not be acquired within that timeout — most likely because
+// another db:migrate process is currently running.
 func (Dialect) Lock(ctx context.Context, conn *sql.Conn, key string) error {
 	var result sql.NullInt64
 	if err := conn.QueryRowContext(ctx, "SELECT GET_LOCK(?, 10)", key).Scan(&result); err != nil {
@@ -78,9 +91,12 @@ func (Dialect) Lock(ctx context.Context, conn *sql.Conn, key string) error {
 	return nil
 }
 
+// Unlock releases the named lock Lock acquired on conn for key.
 func (Dialect) Unlock(ctx context.Context, conn *sql.Conn, key string) error {
 	_, err := conn.ExecContext(ctx, "SELECT RELEASE_LOCK(?)", key)
 	return err
 }
 
+// SupportsTransactionalDDL always returns false: MySQL commits each DDL statement immediately,
+// so a migration file cannot be rolled back partway through.
 func (Dialect) SupportsTransactionalDDL() bool { return false }

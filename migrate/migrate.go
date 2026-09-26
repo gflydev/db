@@ -8,12 +8,24 @@ import (
 	"sort"
 )
 
-// Result reports what a single Up/Down invocation did, in the order it happened.
+// lockKey identifies this package's advisory lock to the database server. It is a fixed,
+// package-level value (not derived from the tracking table name) because a single database
+// should only ever run one db:migrate at a time regardless of which table it tracks into.
+const lockKey = "gfly_db_migrate"
+
+// Result reports what a single Up or Down call did, in the order it happened. An empty Applied
+// means there was nothing pending (Up) or nothing applied to roll back (Down) — not an error.
 type Result struct {
 	Applied []string
 }
 
-// Migrator runs *.sql files from dir against db, tracking state in table via dialect.
+// Migrator runs the *.sql files in a directory against a database, tracking each one's state in
+// a table it manages itself. Construct one with NewMigrator; a Migrator is cheap to create and
+// holds no long-lived connection until a method is called.
+//
+// A Migrator is not safe for concurrent use by multiple goroutines in the same process — call
+// its methods sequentially. Concurrent *processes* (e.g. two deploys racing) are handled by the
+// Dialect's advisory lock, which every method holds for its full duration.
 type Migrator struct {
 	db      *sql.DB
 	dialect Dialect
@@ -22,9 +34,12 @@ type Migrator struct {
 	store   *store
 }
 
-// NewMigrator wires up a Migrator. db is the pool to run against; dialect selects the SQL
-// dialect; dir is the migrations directory; table is the tracking table name (every adopter
-// uses "migrations" — the spec fixes this rather than making it configurable).
+// NewMigrator constructs a Migrator that runs the migration files in dir against db, using
+// dialect for every dialect-specific SQL fragment and table as the tracking table's name.
+//
+// table is normally DefaultTable ("migrations"); RunCLI always passes DefaultTable, since the
+// spec fixes the table name rather than making it configurable (a health check and db:migrate
+// must agree on one name — see the migrate package's README).
 func NewMigrator(db *sql.DB, dialect Dialect, dir string, table string) *Migrator {
 	return &Migrator{
 		db:      db,
@@ -35,127 +50,33 @@ func NewMigrator(db *sql.DB, dialect Dialect, dir string, table string) *Migrato
 	}
 }
 
-const lockKey = "gfly_db_migrate"
-
-// prepare ensures the tracking table exists, loads the migration files, loads the current
-// tracking rows, and verifies every "up" migration's on-disk checksum still matches what was
-// recorded. Every public method calls this first (Status passes force=true so it never aborts).
-func (m *Migrator) prepare(ctx context.Context, force bool) ([]Migration, map[string]Record, error) {
-	if err := m.store.ensureTable(ctx); err != nil {
-		return nil, nil, err
-	}
-	migrations, err := Load(m.dir)
-	if err != nil {
-		return nil, nil, err
-	}
-	records, err := m.store.list(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var mismatched []string
-	for _, mig := range migrations {
-		rec, ok := records[mig.Name]
-		if !ok || rec.Status != "up" {
-			continue
-		}
-		sum, err := checksum(mig.UpPath)
-		if err != nil {
-			return nil, nil, err
-		}
-		if sum != rec.Checksum {
-			mismatched = append(mismatched, mig.Name)
-		}
-	}
-	if len(mismatched) > 0 {
-		msg := fmt.Sprintf("migrate: applied migration(s) changed on disk since they ran: %v", mismatched)
-		if !force {
-			return nil, nil, fmt.Errorf("%s (use --force to proceed anyway)", msg)
-		}
-		fmt.Fprintf(os.Stderr, "warning: %s — proceeding because --force was given\n", msg)
-	}
-
-	return migrations, records, nil
-}
-
-// withLock runs fn on a single dedicated connection, holding the dialect's advisory lock for
-// fn's entire duration.
-func (m *Migrator) withLock(ctx context.Context, fn func(conn *sql.Conn) error) error {
-	conn, err := m.db.Conn(ctx)
-	if err != nil {
-		return fmt.Errorf("migrate: acquiring a connection: %w", err)
-	}
-	defer conn.Close()
-
-	if err := m.dialect.Lock(ctx, conn, lockKey); err != nil {
-		return fmt.Errorf("migrate: acquiring lock: %w", err)
-	}
-	defer m.dialect.Unlock(ctx, conn, lockKey)
-
-	return fn(conn)
-}
-
-// runFile executes path's contents. On a transactional dialect, the whole file runs in one
-// transaction that is rolled back on any error. On a non-transactional dialect (MySQL: DDL
-// auto-commits), it runs directly against conn and a failure partway through is reported as
-// such, since it cannot be undone.
-func (m *Migrator) runFile(ctx context.Context, conn *sql.Conn, path string) error {
-	contents, err := os.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("migrate: reading %s: %w", path, err)
-	}
-
-	if !m.dialect.SupportsTransactionalDDL() {
-		if _, err := conn.ExecContext(ctx, string(contents)); err != nil {
-			return fmt.Errorf("migrate: running %s (dialect does not support transactional DDL — statements before the failure may already be applied): %w", path, err)
-		}
-		return nil
-	}
-
-	tx, err := conn.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("migrate: beginning transaction for %s: %w", path, err)
-	}
-	if _, err := tx.ExecContext(ctx, string(contents)); err != nil {
-		_ = tx.Rollback()
-		return fmt.Errorf("migrate: running %s: %w", path, err)
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("migrate: committing %s: %w", path, err)
-	}
-	return nil
-}
-
-// Up applies the next pending migration (all == false) or every pending migration (all ==
-// true), ascending by version, all sharing one new batch number. dryRun reports what would run
-// without executing anything or touching the tracking table.
+// Up applies pending migrations, ascending by version. With all == false (the default), it
+// applies exactly one — the earliest pending migration. With all == true, it applies every
+// pending migration, all sharing one freshly incremented batch number. With dryRun == true, it
+// reports which migration(s) it would apply without executing any SQL or writing to the
+// tracking table.
+//
+// Returns ErrChecksumMismatch if a migration currently marked applied no longer matches its
+// on-disk checksum (see prepare). If a file fails partway through a multi-file --all run, Up
+// stops immediately: earlier files in the run stay applied and recorded, the failing file is
+// not recorded as applied, and no later file is attempted.
 func (m *Migrator) Up(ctx context.Context, all bool, dryRun bool) (*Result, error) {
-	result := &Result{}
+	result := &Result{Applied: []string{}}
 	err := m.withLock(ctx, func(conn *sql.Conn) error {
 		migrations, records, err := m.prepare(ctx, false)
 		if err != nil {
 			return err
 		}
 
-		var pending []Migration
-		for _, mig := range migrations {
-			rec, ok := records[mig.Name]
-			if !ok || rec.Status != "up" {
-				pending = append(pending, mig)
-			}
-		}
-
+		pending := selectPending(migrations, records)
 		if len(pending) == 0 {
 			return nil
 		}
 		if !all {
 			pending = pending[:1]
 		}
-
 		if dryRun {
-			for _, mig := range pending {
-				result.Applied = append(result.Applied, mig.Name)
-			}
+			result.Applied = migrationNames(pending)
 			return nil
 		}
 
@@ -166,18 +87,7 @@ func (m *Migrator) Up(ctx context.Context, all bool, dryRun bool) (*Result, erro
 		batch++
 
 		for _, mig := range pending {
-			if err := m.runFile(ctx, conn, mig.UpPath); err != nil {
-				return err
-			}
-			sum, err := checksum(mig.UpPath)
-			if err != nil {
-				return err
-			}
-			runCount := 1
-			if rec, ok := records[mig.Name]; ok {
-				runCount = rec.RunCount + 1
-			}
-			if err := m.store.markUpWithRunCount(ctx, mig.Name, batch, sum, runCount); err != nil {
+			if err := m.applyOne(ctx, conn, mig, batch, records[mig.Name].RunCount); err != nil {
 				return err
 			}
 			result.Applied = append(result.Applied, mig.Name)
@@ -187,53 +97,62 @@ func (m *Migrator) Up(ctx context.Context, all bool, dryRun bool) (*Result, erro
 	return result, err
 }
 
-// Down rolls back the single most-recently-applied migration (all == false), or every
-// migration in the current latest batch (all == true), descending by version.
+// applyOne runs one migration's .up.sql file and, on success, records it as applied with
+// runCount+1 (runCount is the migration's prior Record.RunCount, or 0 if it has never run).
+func (m *Migrator) applyOne(ctx context.Context, conn *sql.Conn, mig Migration, batch int, priorRunCount int) error {
+	if err := m.runFile(ctx, conn, mig.UpPath); err != nil {
+		return err
+	}
+	sum, err := checksum(mig.UpPath)
+	if err != nil {
+		return err
+	}
+	return m.store.markUp(ctx, mig.Name, batch, sum, priorRunCount+1)
+}
+
+// selectPending returns every migration not currently marked StatusUp, in migrations' order
+// (Load already sorts that ascending by version).
+func selectPending(migrations []Migration, records map[string]Record) []Migration {
+	pending := make([]Migration, 0, len(migrations))
+	for _, mig := range migrations {
+		if rec, ok := records[mig.Name]; !ok || rec.Status != StatusUp {
+			pending = append(pending, mig)
+		}
+	}
+	return pending
+}
+
+// Down rolls back applied migrations, descending by version. With all == false (the default),
+// it rolls back exactly one — the single most-recently-applied migration, regardless of which
+// batch it belongs to. With all == true, it rolls back every migration in the current latest
+// batch (every StatusUp row sharing the highest Record.Batch value). With dryRun == true, it
+// reports which migration(s) it would roll back without executing any SQL.
+//
+// Returns ErrChecksumMismatch under the same condition as Up. Returns ErrFilesMissing if a
+// migration recorded as applied has no matching files in the migrations directory. As with Up,
+// a failure partway through a multi-file --all rollback stops the run immediately.
 func (m *Migrator) Down(ctx context.Context, all bool, dryRun bool) (*Result, error) {
-	result := &Result{}
+	result := &Result{Applied: []string{}}
 	err := m.withLock(ctx, func(conn *sql.Conn) error {
 		migrations, records, err := m.prepare(ctx, false)
 		if err != nil {
 			return err
 		}
-		byName := map[string]Migration{}
-		for _, mig := range migrations {
-			byName[mig.Name] = mig
-		}
 
-		var upNames []string
-		for name, rec := range records {
-			if rec.Status == "up" {
-				upNames = append(upNames, name)
-			}
-		}
-		if len(upNames) == 0 {
+		targets := selectRollbackTargets(records, all)
+		if len(targets) == 0 {
 			return nil
 		}
-		sort.Sort(sort.Reverse(sort.StringSlice(upNames)))
-
-		var toRollBack []string
-		if all {
-			latestBatch := records[upNames[0]].Batch
-			for _, name := range upNames {
-				if records[name].Batch == latestBatch {
-					toRollBack = append(toRollBack, name)
-				}
-			}
-			sort.Sort(sort.Reverse(sort.StringSlice(toRollBack)))
-		} else {
-			toRollBack = upNames[:1]
-		}
-
 		if dryRun {
-			result.Applied = toRollBack
+			result.Applied = targets
 			return nil
 		}
 
-		for _, name := range toRollBack {
+		byName := migrationsByName(migrations)
+		for _, name := range targets {
 			mig, ok := byName[name]
 			if !ok {
-				return fmt.Errorf("migrate: %s is recorded as applied but its .sql files are missing from %s", name, m.dir)
+				return fmt.Errorf("%w: %s (looked in %s)", ErrFilesMissing, name, m.dir)
 			}
 			if err := m.runFile(ctx, conn, mig.DownPath); err != nil {
 				return err
@@ -248,36 +167,80 @@ func (m *Migrator) Down(ctx context.Context, all bool, dryRun bool) (*Result, er
 	return result, err
 }
 
-// Status reports every migration's on-disk file joined with its tracking-table row, if any.
+// selectRollbackTargets returns the names of the migrations Down should roll back, descending
+// by version: just the single highest-version StatusUp row when all is false, or every
+// StatusUp row sharing that row's batch number when all is true. Returns an empty slice (never
+// nil) if nothing is currently applied.
+func selectRollbackTargets(records map[string]Record, all bool) []string {
+	applied := make([]string, 0, len(records))
+	for name, rec := range records {
+		if rec.Status == StatusUp {
+			applied = append(applied, name)
+		}
+	}
+	if len(applied) == 0 {
+		return applied
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(applied)))
+
+	if !all {
+		return applied[:1]
+	}
+
+	latestBatch := records[applied[0]].Batch
+	targets := make([]string, 0, len(applied))
+	for _, name := range applied {
+		if records[name].Batch == latestBatch {
+			targets = append(targets, name)
+		}
+	}
+	return targets
+}
+
+// Status reports every migration file's state: joined with its tracking-table row if it has
+// one, or reported as pending if it doesn't. Unlike Up and Down, Status never fails on
+// ErrChecksumMismatch — it reports the mismatch per row (StatusRow.ChecksumMatches) instead of
+// refusing to run, since inspecting state should always be safe.
 func (m *Migrator) Status(ctx context.Context) ([]StatusRow, error) {
-	var rows []StatusRow
+	rows := []StatusRow{}
 	err := m.withLock(ctx, func(conn *sql.Conn) error {
-		migrations, records, err := m.prepare(ctx, true) // force=true: --status must never abort
+		migrations, records, err := m.prepare(ctx, true) // force=true: Status must never abort
 		if err != nil {
 			return err
 		}
 		for _, mig := range migrations {
-			row := StatusRow{Migration: mig, ChecksumMatches: true}
-			if rec, ok := records[mig.Name]; ok {
-				r := rec
-				row.Record = &r
-				if rec.Status == "up" {
-					sum, err := checksum(mig.UpPath)
-					if err != nil {
-						return err
-					}
-					row.ChecksumMatches = sum == rec.Checksum
-				}
-			}
-			rows = append(rows, row)
+			rows = append(rows, statusRowFor(mig, records))
 		}
 		return nil
 	})
 	return rows, err
 }
 
-// Baseline marks every migration up to and including version as already applied, without
-// running any SQL. It refuses to run on a non-empty tracking table unless force is true.
+// statusRowFor builds mig's StatusRow from records, recomputing the on-disk checksum only when
+// mig is currently applied (a pending migration has nothing recorded to compare against).
+func statusRowFor(mig Migration, records map[string]Record) StatusRow {
+	row := StatusRow{Migration: mig, ChecksumMatches: true}
+	rec, ok := records[mig.Name]
+	if !ok {
+		return row
+	}
+	row.Record = &rec
+	if rec.Status == StatusUp {
+		if sum, err := checksum(mig.UpPath); err == nil {
+			row.ChecksumMatches = sum == rec.Checksum
+		}
+	}
+	return row
+}
+
+// Baseline marks every migration up to and including version as already applied — batch 0,
+// run count 1, real checksum — without running any SQL. Use it once, against a database that
+// already has this schema from before it was managed by this tool.
+//
+// Returns ErrNonEmptyTable if the tracking table already has any rows and force is false.
+// Returns ErrUnknownVersion if version does not match any migration Load discovers. With
+// force == true, Baseline proceeds even over an existing baseline, overwriting the affected
+// rows.
 func (m *Migrator) Baseline(ctx context.Context, version string, force bool) error {
 	return m.withLock(ctx, func(conn *sql.Conn) error {
 		if err := m.store.ensureTable(ctx); err != nil {
@@ -288,23 +251,15 @@ func (m *Migrator) Baseline(ctx context.Context, version string, force bool) err
 			return err
 		}
 		if !empty && !force {
-			return fmt.Errorf("migrate: --baseline refuses to run on a non-empty %s table (use --force to overwrite)", m.table)
+			return fmt.Errorf("%w: %s", ErrNonEmptyTable, m.table)
 		}
 
 		migrations, err := Load(m.dir)
 		if err != nil {
 			return err
 		}
-
-		found := false
-		for _, mig := range migrations {
-			if mig.Version == version {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return fmt.Errorf("migrate: --baseline=%s does not match any migration's version", version)
+		if !hasVersion(migrations, version) {
+			return fmt.Errorf("%w: %s", ErrUnknownVersion, version)
 		}
 
 		for _, mig := range migrations {
@@ -321,4 +276,135 @@ func (m *Migrator) Baseline(ctx context.Context, version string, force bool) err
 		}
 		return nil
 	})
+}
+
+// prepare ensures the tracking table exists, loads the migration files from disk, loads the
+// current tracking rows, and verifies every StatusUp migration's on-disk checksum still matches
+// what was recorded when it last ran. Every exported method calls this first; Status is the one
+// caller that passes force == true, since it must report a mismatch rather than abort on it.
+func (m *Migrator) prepare(ctx context.Context, force bool) ([]Migration, map[string]Record, error) {
+	if err := m.store.ensureTable(ctx); err != nil {
+		return nil, nil, err
+	}
+	migrations, err := Load(m.dir)
+	if err != nil {
+		return nil, nil, err
+	}
+	records, err := m.store.list(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	mismatched, err := checksumMismatches(migrations, records)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(mismatched) > 0 {
+		if !force {
+			return nil, nil, fmt.Errorf("%w: %v", ErrChecksumMismatch, mismatched)
+		}
+		fmt.Fprintf(os.Stderr, "warning: %v: %v — proceeding because --force was given\n", ErrChecksumMismatch, mismatched)
+	}
+
+	return migrations, records, nil
+}
+
+// checksumMismatches returns the names of every StatusUp migration whose current on-disk
+// checksum no longer matches the one recorded in its Record.
+func checksumMismatches(migrations []Migration, records map[string]Record) ([]string, error) {
+	var mismatched []string
+	for _, mig := range migrations {
+		rec, ok := records[mig.Name]
+		if !ok || rec.Status != StatusUp {
+			continue
+		}
+		sum, err := checksum(mig.UpPath)
+		if err != nil {
+			return nil, err
+		}
+		if sum != rec.Checksum {
+			mismatched = append(mismatched, mig.Name)
+		}
+	}
+	return mismatched, nil
+}
+
+// withLock runs fn on a single dedicated connection, holding the dialect's advisory lock for
+// fn's entire duration, so a concurrent db:migrate process (on any connection) blocks instead of
+// racing this one.
+func (m *Migrator) withLock(ctx context.Context, fn func(conn *sql.Conn) error) error {
+	conn, err := m.db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("acquiring a connection: %w", err)
+	}
+	defer conn.Close()
+
+	if err := m.dialect.Lock(ctx, conn, lockKey); err != nil {
+		return fmt.Errorf("acquiring lock: %w", err)
+	}
+	defer m.dialect.Unlock(ctx, conn, lockKey)
+
+	return fn(conn)
+}
+
+// runFile executes path's contents against conn. On a dialect that supports transactional DDL
+// (Postgres), the whole file runs in one transaction that is rolled back on any error, so a
+// failing file leaves no partial effect. On a dialect that does not (MySQL: DDL statements
+// auto-commit individually), it runs directly against conn, and a failure partway through means
+// the statements before it have already taken effect — the returned error says so explicitly,
+// since that can't be undone by this package.
+func (m *Migrator) runFile(ctx context.Context, conn *sql.Conn, path string) error {
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", path, err)
+	}
+
+	if !m.dialect.SupportsTransactionalDDL() {
+		if _, err := conn.ExecContext(ctx, string(contents)); err != nil {
+			return fmt.Errorf("running %s (dialect has no transactional DDL — statements before the failure may already be applied): %w", path, err)
+		}
+		return nil
+	}
+
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("beginning transaction for %s: %w", path, err)
+	}
+	if _, err := tx.ExecContext(ctx, string(contents)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("running %s: %w", path, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing %s: %w", path, err)
+	}
+	return nil
+}
+
+// migrationsByName indexes migrations by their Name for lookup by the names selectRollbackTargets
+// returns.
+func migrationsByName(migrations []Migration) map[string]Migration {
+	byName := make(map[string]Migration, len(migrations))
+	for _, mig := range migrations {
+		byName[mig.Name] = mig
+	}
+	return byName
+}
+
+// migrationNames extracts each Migration's Name, in order.
+func migrationNames(migrations []Migration) []string {
+	names := make([]string, len(migrations))
+	for i, mig := range migrations {
+		names[i] = mig.Name
+	}
+	return names
+}
+
+// hasVersion reports whether any migration in migrations has the given version.
+func hasVersion(migrations []Migration, version string) bool {
+	for _, mig := range migrations {
+		if mig.Version == version {
+			return true
+		}
+	}
+	return false
 }

@@ -12,14 +12,24 @@ import (
 	"strings"
 )
 
+// filenamePattern matches a single migration file and captures its three parts: the 6-digit
+// version, the snake_case description, and its direction (up/down). A file that doesn't match
+// this — including a bare "*.sql" with no direction suffix — is rejected by Load rather than
+// silently skipped, since an unrecognized file can't be placed in the ascending/descending order
+// the rest of this package depends on.
 var filenamePattern = regexp.MustCompile(`^(\d{6})_([a-z0-9_]+)\.(up|down)\.sql$`)
 
-// Load reads every *.sql file in dir, validates the naming and up/down pairing rules, and
-// returns the migrations sorted ascending by version.
+// Load reads every *.sql file directly inside dir (not recursively), validates that each one
+// matches "NNNNNN_description.(up|down).sql" and that every "up" file has a matching "down"
+// file and vice versa, and returns the migrations sorted ascending by version.
+//
+// Returns an error listing every offending filename if any file fails the naming pattern or is
+// missing its up/down counterpart — Load fails all-or-nothing rather than returning a partial,
+// silently-incomplete set.
 func Load(dir string) ([]Migration, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, fmt.Errorf("migrate: reading %s: %w", dir, err)
+		return nil, fmt.Errorf("reading migrations directory %s: %w", dir, err)
 	}
 
 	ups := map[string]string{}   // name -> path
@@ -51,7 +61,7 @@ func Load(dir string) ([]Migration, error) {
 
 	if len(badNames) > 0 {
 		sort.Strings(badNames)
-		return nil, fmt.Errorf("migrate: filenames must match NNNNNN_name.(up|down).sql: %s", strings.Join(badNames, ", "))
+		return nil, fmt.Errorf("filenames must match NNNNNN_name.(up|down).sql: %s", strings.Join(badNames, ", "))
 	}
 
 	var orphans []string
@@ -67,7 +77,7 @@ func Load(dir string) ([]Migration, error) {
 	}
 	if len(orphans) > 0 {
 		sort.Strings(orphans)
-		return nil, fmt.Errorf("migrate: unpaired migration file(s): %s", strings.Join(orphans, ", "))
+		return nil, fmt.Errorf("unpaired migration file(s): %s", strings.Join(orphans, ", "))
 	}
 
 	migrations := make([]Migration, 0, len(ups))
@@ -84,17 +94,18 @@ func Load(dir string) ([]Migration, error) {
 	return migrations, nil
 }
 
-// checksum returns the hex-encoded sha256 of path's contents.
+// checksum returns the hex-encoded sha256 of path's contents. Migrator uses it to detect when
+// an applied migration's .up.sql file has changed since it ran (ErrChecksumMismatch).
 func checksum(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return "", fmt.Errorf("migrate: checksumming %s: %w", path, err)
+		return "", fmt.Errorf("checksumming %s: %w", path, err)
 	}
 	defer f.Close()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
-		return "", fmt.Errorf("migrate: checksumming %s: %w", path, err)
+		return "", fmt.Errorf("checksumming %s: %w", path, err)
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
