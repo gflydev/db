@@ -272,13 +272,19 @@ func statusRowFor(mig Migration, records map[string]Record) StatusRow {
 }
 
 // Baseline marks every migration up to and including version as already applied — batch 0,
-// run count 1, real checksum — without running any SQL. Use it once, against a database that
+// run count 1, real checksum — without running any SQL. Use it against a database that
 // already has this schema from before it was managed by this tool.
 //
-// Returns ErrNonEmptyTable if the tracking table already has any rows and force is false.
-// Returns ErrUnknownVersion if version does not match any migration Load discovers. With
-// force == true, Baseline proceeds even over an existing baseline, overwriting the affected
-// rows.
+// A baseline can be extended: if the tracking table holds only an earlier baseline (every row
+// in batch 0 and still up) and version is later than that baseline's last migration, Baseline
+// marks just the migrations after it, leaving the existing rows untouched. This covers a
+// baseline that was first set too early.
+//
+// Returns ErrNonEmptyTable if, with force false, the tracking table has any row this tool
+// applied or rolled back itself (batch > 0, or status down). Returns ErrBaselineNotAhead if,
+// with force false, version is not later than the existing baseline. Returns ErrUnknownVersion
+// if version does not match any migration Load discovers. With force == true, Baseline
+// proceeds over any existing rows, overwriting the affected ones.
 func (m *Migrator) Baseline(ctx context.Context, version string, force bool) error {
 	return m.withLock(ctx, func(conn *sql.Conn) error {
 		if err := m.store.ensureTable(ctx); err != nil {
@@ -288,8 +294,24 @@ func (m *Migrator) Baseline(ctx context.Context, version string, force bool) err
 		if err != nil {
 			return err
 		}
+
+		// With force false and existing rows, the only thing allowed is extending an earlier
+		// baseline; existing holds its rows so the loop below skips them.
+		var existing map[string]Record
+		currentBaseline := ""
 		if !empty && !force {
-			return errors.New("%w: %s", ErrNonEmptyTable, m.table)
+			existing, err = m.store.list(ctx)
+			if err != nil {
+				return err
+			}
+			for _, rec := range existing {
+				if rec.Batch != 0 || rec.Status != StatusUp {
+					return errors.New("%w: %s has migrations applied or rolled back by db:migrate (%s)", ErrNonEmptyTable, m.table, rec.Migration)
+				}
+				if len(rec.Migration) >= versionLength && rec.Migration[:versionLength] > currentBaseline {
+					currentBaseline = rec.Migration[:versionLength]
+				}
+			}
 		}
 
 		migrations, err := Load(m.dir)
@@ -299,9 +321,15 @@ func (m *Migrator) Baseline(ctx context.Context, version string, force bool) err
 		if !hasVersion(migrations, version) {
 			return errors.New("%w: %s", ErrUnknownVersion, version)
 		}
+		if existing != nil && version <= currentBaseline {
+			return errors.New("%w: %s is not later than the current baseline %s", ErrBaselineNotAhead, version, currentBaseline)
+		}
 
 		for _, mig := range migrations {
 			if mig.Version > version {
+				continue
+			}
+			if _, ok := existing[mig.Name]; ok {
 				continue
 			}
 			sum, err := checksum(mig.UpPath)

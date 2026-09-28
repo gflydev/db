@@ -63,6 +63,21 @@ Connection settings are read from `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`
 ./build/artisan db:migrate help                         # same as -h/--help: print the flag list and examples above
 ```
 
+### Files created by `--new`
+
+The new `.up.sql` and `.down.sql` files are not empty: they hold guidance and numbered section
+headers, written only as SQL comments, so an untouched pair still runs as a no-op.
+
+- `.up.sql` — rules to keep in mind (one concern per migration, transaction behaviour per
+  dialect, never edit the file once applied), a checklist of the objects it creates, and
+  sections in apply order: 1. types/extensions/sequences, 2. tables, 3. changes to existing
+  tables, 4. constraints and indexes, 5. data, 6. functions/triggers/views.
+- `.down.sql` — the same sections in reverse order (6 → 1), a table of commonly forgotten
+  removals (`CREATE TYPE` → `DROP TYPE`, and so on), and a reminder to run up → down → up on a
+  scratch database before committing.
+
+Delete the sections a migration does not need.
+
 ## Design notes
 
 - Each migration file runs in its own transaction on PostgreSQL; MySQL's DDL auto-commits, so a
@@ -71,9 +86,11 @@ Connection settings are read from `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`
   concurrent `db:migrate` runs serialize rather than race.
 - Before any command runs, every migration currently recorded as `up` has its on-disk checksum
   re-verified against what was recorded; a mismatch aborts (`--force` to proceed anyway).
-- `--baseline` is a one-time bootstrap for a database that already has this schema outside the
-  tool's tracking — it never executes SQL, and refuses to run on a non-empty tracking table
-  without `--force`.
+- `--baseline` is a bootstrap for a database that already has this schema outside the tool's
+  tracking — it never executes SQL. If the tracking table holds only an earlier baseline, a later
+  `--baseline=VERSION` extends it: it marks the migrations after the old baseline and leaves the
+  existing rows alone. It refuses a version at or before the current baseline, and any table
+  holding a migration `db:migrate` applied or rolled back itself, unless `--force` is given.
 - Rolling back a migration keeps its tracking row (status flips to `down`, `run_count` and
   `batch` stay as history) rather than deleting it, so `run_count` survives repeated
   rollback/reapply cycles.

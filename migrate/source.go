@@ -129,8 +129,8 @@ func checksum(path string) (string, error) {
 
 // New creates a fresh migration pair in dir, named "{current UTC timestamp}_{description}", and
 // returns it as a Migration (with UpPath/DownPath already pointing at the new files). Both files
-// are created with a one-line placeholder comment and nothing else — valid, no-op SQL until
-// filled in.
+// are created from upTemplate/downTemplate: guidance and numbered section headers written only
+// as SQL comments, so they are valid, no-op SQL until filled in.
 //
 // description must already be snake_case ([a-z0-9_]+); RunCLI's --new flag validates this before
 // calling New, and New itself re-validates so a direct library caller gets the same guarantee.
@@ -153,10 +153,10 @@ func New(dir, description string) (Migration, error) {
 		}
 	}
 
-	if err := utils.WriteStringToFile(upPath, "-- write the \"up\" SQL for "+description+" here\n", 0o644); err != nil {
+	if err := utils.WriteStringToFile(upPath, renderTemplate(upTemplate, name), 0o644); err != nil {
 		return Migration{}, errors.New("creating %s: %w", upPath, err)
 	}
-	if err := utils.WriteStringToFile(downPath, "-- write the \"down\" SQL for "+description+" here\n", 0o644); err != nil {
+	if err := utils.WriteStringToFile(downPath, renderTemplate(downTemplate, name), 0o644); err != nil {
 		return Migration{}, errors.New("creating %s: %w", downPath, err)
 	}
 

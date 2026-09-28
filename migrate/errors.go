@@ -19,8 +19,14 @@ var (
 	ErrChecksumMismatch = errors.New("checksum mismatch: an applied migration changed on disk since it ran")
 
 	// ErrNonEmptyTable means Baseline was called with force == false against a tracking table
-	// that already has at least one row. Baseline is a one-time bootstrap, not a merge tool.
+	// that has a row this tool applied or rolled back itself. A table holding only an earlier
+	// baseline is not refused: Baseline extends it (see ErrBaselineNotAhead).
 	ErrNonEmptyTable = errors.New("baseline refuses to run on a non-empty tracking table")
+
+	// ErrBaselineNotAhead means Baseline was called with force == false to extend an existing
+	// baseline, but version is not later than the baseline's last migration. A baseline only
+	// moves forward; shrinking it would need rows removed, which Baseline never does.
+	ErrBaselineNotAhead = errors.New("baseline version must be later than the current baseline")
 
 	// ErrUnknownVersion means the version passed to Baseline does not match any migration
 	// discovered by Load.

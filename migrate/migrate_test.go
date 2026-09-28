@@ -6,6 +6,7 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
@@ -176,11 +177,84 @@ func TestMigrator_Baseline_NonEmptyTable_RefusesWithoutForce(t *testing.T) {
 
 	mock.ExpectExec(`CREATE TABLE IF NOT EXISTS migrations`).WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM migrations`).WillReturnRows(sqlmock.NewRows([]string{"c"}).AddRow(1))
+	// A row in batch 1 was applied by db:migrate itself, so this is real history, not a baseline.
+	mock.ExpectQuery(`SELECT migration, batch, status`).WillReturnRows(
+		emptyRecordRows().AddRow("20260101_000001_create_users", 1, StatusUp, 1, "sum", time.Now(), nil))
 
 	m := newTestMigrator(db, filepath.Join("testdata", "valid"))
-	err = m.Baseline(context.Background(), "20260101_000001", false)
+	err = m.Baseline(context.Background(), "20260101_000002", false)
 	if !errors.Is(err, ErrNonEmptyTable) {
 		t.Fatalf("got error %v, want errors.Is(err, ErrNonEmptyTable)", err)
+	}
+}
+
+func TestMigrator_Baseline_RolledBackBaselineRow_RefusesWithoutForce(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectExec(`CREATE TABLE IF NOT EXISTS migrations`).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM migrations`).WillReturnRows(sqlmock.NewRows([]string{"c"}).AddRow(1))
+	// Batch 0 but rolled back: db:migrate ran its down file, so it is no longer a plain baseline.
+	mock.ExpectQuery(`SELECT migration, batch, status`).WillReturnRows(
+		emptyRecordRows().AddRow("20260101_000001_create_users", 0, StatusDown, 1, "sum", time.Now(), time.Now()))
+
+	m := newTestMigrator(db, filepath.Join("testdata", "valid"))
+	err = m.Baseline(context.Background(), "20260101_000002", false)
+	if !errors.Is(err, ErrNonEmptyTable) {
+		t.Fatalf("got error %v, want errors.Is(err, ErrNonEmptyTable)", err)
+	}
+}
+
+func TestMigrator_Baseline_ExistingBaseline_ExtendsToLaterVersion(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectExec(`CREATE TABLE IF NOT EXISTS migrations`).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM migrations`).WillReturnRows(sqlmock.NewRows([]string{"c"}).AddRow(1))
+	mock.ExpectQuery(`SELECT migration, batch, status`).WillReturnRows(
+		emptyRecordRows().AddRow("20260101_000001_create_users", 0, StatusUp, 1, "sum", time.Now(), nil))
+	// Only the migration after the existing baseline is marked; the existing row is left alone.
+	mock.ExpectExec(`INSERT INTO migrations`).WithArgs("20260101_000002_add_email_index", 0, 1, sqlmock.AnyArg()).WillReturnResult(sqlmock.NewResult(1, 1))
+
+	m := newTestMigrator(db, filepath.Join("testdata", "valid"))
+	if err := m.Baseline(context.Background(), "20260101_000002", false); err != nil {
+		t.Fatalf("Baseline returned error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestMigrator_Baseline_ExistingBaseline_RefusesSameOrEarlierVersion(t *testing.T) {
+	for _, version := range []string{"20260101_000001", "20260101_000002"} {
+		t.Run(version, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			if err != nil {
+				t.Fatalf("sqlmock.New: %v", err)
+			}
+			defer db.Close()
+
+			mock.ExpectExec(`CREATE TABLE IF NOT EXISTS migrations`).WillReturnResult(sqlmock.NewResult(0, 0))
+			mock.ExpectQuery(`SELECT COUNT\(\*\) FROM migrations`).WillReturnRows(sqlmock.NewRows([]string{"c"}).AddRow(2))
+			mock.ExpectQuery(`SELECT migration, batch, status`).WillReturnRows(emptyRecordRows().
+				AddRow("20260101_000001_create_users", 0, StatusUp, 1, "sum", time.Now(), nil).
+				AddRow("20260101_000002_add_email_index", 0, StatusUp, 1, "sum", time.Now(), nil))
+
+			m := newTestMigrator(db, filepath.Join("testdata", "valid"))
+			err = m.Baseline(context.Background(), version, false)
+			if !errors.Is(err, ErrBaselineNotAhead) {
+				t.Fatalf("got error %v, want errors.Is(err, ErrBaselineNotAhead)", err)
+			}
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Fatalf("unmet expectations (nothing should be written): %v", err)
+			}
+		})
 	}
 }
 
