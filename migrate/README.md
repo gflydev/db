@@ -86,9 +86,11 @@ Delete the sections a migration does not need.
   concurrent `db:migrate` runs serialize rather than race.
 - Before any command runs, every migration currently recorded as `up` has its on-disk checksum
   re-verified against what was recorded; a mismatch aborts (`--force` to proceed anyway).
-- `--baseline` is a one-time bootstrap for a database that already has this schema outside the
-  tool's tracking — it never executes SQL, and refuses to run on a non-empty tracking table
-  without `--force`.
+- `--baseline` is a bootstrap for a database that already has this schema outside the tool's
+  tracking — it never executes SQL. If the tracking table holds only an earlier baseline, a later
+  `--baseline=VERSION` extends it: it marks the migrations after the old baseline and leaves the
+  existing rows alone. It refuses a version at or before the current baseline, and any table
+  holding a migration `db:migrate` applied or rolled back itself, unless `--force` is given.
 - Rolling back a migration keeps its tracking row (status flips to `down`, `run_count` and
   `batch` stay as history) rather than deleting it, so `run_count` survives repeated
   rollback/reapply cycles.

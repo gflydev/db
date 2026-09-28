@@ -28,6 +28,7 @@ Flags:
   --dry-run             Print what would run without executing it.
   --new=NAME            Create a new migration pair timestamped now, named NAME, then exit.
   --baseline=VERSION    Mark every migration up to VERSION as already applied, without running SQL.
+                        Run it again with a later VERSION to extend an earlier baseline.
   --force               Overwrite an existing baseline, or proceed past a checksum mismatch.
   -h, --help            Show this help.
 
