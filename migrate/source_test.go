@@ -107,6 +107,46 @@ func TestNew_ValidDescription_CreatesLoadableFiles(t *testing.T) {
 	}
 }
 
+func TestNew_WritesGuidanceAsCommentOnlySQL(t *testing.T) {
+	dir := t.TempDir()
+
+	mig, err := New(dir, "create_widgets_table")
+	if err != nil {
+		t.Fatalf("New returned error: %v", err)
+	}
+
+	cases := []struct {
+		path string
+		want []string
+	}{
+		{mig.UpPath, []string{mig.Name, "Direction: UP", "NEVER edit it again", "1. Types, extensions, sequences", "6. Functions, triggers, views"}},
+		{mig.DownPath, []string{mig.Name, "Direction: DOWN", "REVERSE order", "DROP TYPE", "up -> down -> up"}},
+	}
+	for _, c := range cases {
+		contents, err := utils.ReadFileAsString(c.path)
+		if err != nil {
+			t.Fatalf("reading %s: %v", c.path, err)
+		}
+		for _, want := range c.want {
+			if !strings.Contains(contents, want) {
+				t.Errorf("%s: missing %q", filepath.Base(c.path), want)
+			}
+		}
+		// An untouched file must stay a no-op when run, so every non-blank line is a comment.
+		for i, line := range strings.Split(contents, "\n") {
+			if trimmed := strings.TrimSpace(line); trimmed != "" && !strings.HasPrefix(trimmed, "--") {
+				t.Errorf("%s line %d is not an SQL comment: %q", filepath.Base(c.path), i+1, line)
+			}
+		}
+	}
+
+	// The down file lists its sections in reverse: types come last, after the tables are gone.
+	down, _ := utils.ReadFileAsString(mig.DownPath)
+	if strings.Index(down, "-- 6. ") > strings.Index(down, "-- 1. ") {
+		t.Error("down file: section 6 should come before section 1")
+	}
+}
+
 func TestNew_InvalidDescription_ReturnsErrorWithoutCreatingFiles(t *testing.T) {
 	dir := t.TempDir()
 
