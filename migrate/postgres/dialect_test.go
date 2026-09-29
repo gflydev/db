@@ -1,6 +1,9 @@
 package postgres
 
-import "testing"
+import (
+	"net/url"
+	"testing"
+)
 
 func TestDialect_CreateMigrationsTableSQL_UsesSerial(t *testing.T) {
 	sql := (Dialect{}).CreateMigrationsTableSQL("migrations")
@@ -53,4 +56,30 @@ func contains(haystack, needle string) bool {
 		}
 		return false
 	})()
+}
+
+func TestConnURL_EscapesSpecialCharsInCredentials(t *testing.T) {
+	t.Setenv("DB_USERNAME", "dance@fit")
+	t.Setenv("DB_PASSWORD", "pa@ss:w/o?r#d%1")
+	t.Setenv("DB_HOST", "localhost")
+	t.Setenv("DB_PORT", "5432")
+	t.Setenv("DB_NAME", "dancefitvn")
+	t.Setenv("DB_SSL_MODE", "disable")
+
+	u, err := url.Parse(connURL())
+	if err != nil {
+		t.Fatalf("connURL is not a valid URL: %v", err)
+	}
+	if got := u.User.Username(); got != "dance@fit" {
+		t.Fatalf("username = %q", got)
+	}
+	if got, _ := u.User.Password(); got != "pa@ss:w/o?r#d%1" {
+		t.Fatalf("password = %q", got)
+	}
+	if u.Hostname() != "localhost" || u.Port() != "5432" {
+		t.Fatalf("host = %q port = %q", u.Hostname(), u.Port())
+	}
+	if u.Path != "/dancefitvn" || u.Query().Get("sslmode") != "disable" {
+		t.Fatalf("path = %q query = %q", u.Path, u.RawQuery)
+	}
 }

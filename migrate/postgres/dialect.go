@@ -8,6 +8,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net"
+	"net/url"
 
 	"github.com/gflydev/core/errors"
 	"github.com/gflydev/core/utils"
@@ -31,20 +33,31 @@ func (Dialect) Name() string { return "postgres" }
 // verify connectivity — callers that need to fail fast on a bad connection should call
 // (*sql.DB).PingContext themselves.
 func (Dialect) Open() (*sql.DB, error) {
-	connURL := fmt.Sprintf(
-		"postgres://%s:%s@%s:%v/%s?sslmode=%s",
-		utils.Getenv("DB_USERNAME", "user"),
-		utils.Getenv("DB_PASSWORD", "secret"),
-		utils.Getenv("DB_HOST", "localhost"),
-		utils.Getenv("DB_PORT", 5432),
-		utils.Getenv("DB_NAME", "gfly"),
-		utils.Getenv("DB_SSL_MODE", "disable"),
-	)
-	db, err := sql.Open("pgx", connURL)
+	db, err := sql.Open("pgx", connURL())
 	if err != nil {
 		return nil, errors.New("postgres: opening connection: %w", err)
 	}
 	return db, nil
+}
+
+// connURL builds the postgres:// URL from the DB_* environment variables. It goes through
+// net/url so credentials containing reserved characters such as '@', ':' or '/' are
+// percent-encoded instead of being mis-parsed as part of the host.
+func connURL() string {
+	u := url.URL{
+		Scheme: "postgres",
+		User: url.UserPassword(
+			fmt.Sprint(utils.Getenv("DB_USERNAME", "user")),
+			fmt.Sprint(utils.Getenv("DB_PASSWORD", "secret")),
+		),
+		Host: net.JoinHostPort(
+			fmt.Sprint(utils.Getenv("DB_HOST", "localhost")),
+			fmt.Sprint(utils.Getenv("DB_PORT", 5432)),
+		),
+		Path:     "/" + fmt.Sprint(utils.Getenv("DB_NAME", "gfly")),
+		RawQuery: url.Values{"sslmode": {fmt.Sprint(utils.Getenv("DB_SSL_MODE", "disable"))}}.Encode(),
+	}
+	return u.String()
 }
 
 // CreateMigrationsTableSQL returns the CREATE TABLE IF NOT EXISTS statement for table, matching
