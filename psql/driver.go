@@ -6,6 +6,8 @@ import (
 	"github.com/gflydev/db"
 	qb "github.com/jivegroup/fluentsql"
 	"github.com/jmoiron/sqlx"
+	"net"
+	"net/url"
 	// Autoload driver for PostgreSQL
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -38,15 +40,22 @@ func (d *PostgreSQL) Load() (*sqlx.DB, error) {
 	// Build the PostgreSQL connection URL using environment variables.
 	// Connection URL format:
 	// postgres://username:password@host:port/dbname?sslmode=disable
-	connURL := fmt.Sprintf(
-		"postgres://%s:%s@%s:%v/%s?sslmode=%s",
-		utils.Getenv("DB_USERNAME", "user"),    // Database username
-		utils.Getenv("DB_PASSWORD", "secret"),  // Database password
-		utils.Getenv("DB_HOST", "localhost"),   // Host address
-		utils.Getenv("DB_PORT", 5432),          // Port number
-		utils.Getenv("DB_NAME", "gfly"),        // Database name
-		utils.Getenv("DB_SSL_MODE", "disable"), // SSL mode (e.g., "disable", "require")
-	)
+	// net/url percent-encodes reserved characters (e.g. '@' in a password) so they are not
+	// mis-parsed as part of the host.
+	u := url.URL{
+		Scheme: "postgres",
+		User: url.UserPassword(
+			fmt.Sprint(utils.Getenv("DB_USERNAME", "user")),   // Database username
+			fmt.Sprint(utils.Getenv("DB_PASSWORD", "secret")), // Database password
+		),
+		Host: net.JoinHostPort(
+			fmt.Sprint(utils.Getenv("DB_HOST", "localhost")), // Host address
+			fmt.Sprint(utils.Getenv("DB_PORT", 5432)),        // Port number
+		),
+		Path:     "/" + fmt.Sprint(utils.Getenv("DB_NAME", "gfly")),                                    // Database name
+		RawQuery: url.Values{"sslmode": {fmt.Sprint(utils.Getenv("DB_SSL_MODE", "disable"))}}.Encode(), // SSL mode (e.g., "disable", "require")
+	}
+	connURL := u.String()
 
 	// Establish the database connection using the constructed URL and "pgx" driver.
 	return db.Connect(connURL, "pgx")
